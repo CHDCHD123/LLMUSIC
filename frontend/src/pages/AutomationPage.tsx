@@ -134,9 +134,9 @@ export default function AutomationPage({ systemStatus, onStatusRefresh }: Props)
     return Math.min(99, Math.round(offset + remainingSpan * ratio));
   }, [status, tick]);
   const recentLogs = useMemo(() => (status?.activity_log ?? []).slice().reverse(), [status]);
-  const pagedLogs = useMemo(() => recentLogs.slice((logPage - 1) * 5, logPage * 5), [recentLogs, logPage]);
+  const pagedLogs = useMemo(() => recentLogs.slice((logPage - 1) * 8, logPage * 8), [recentLogs, logPage]);
   const pagedArtifacts = useMemo(() => artifactEntries.slice((assetPage - 1) * 5, assetPage * 5), [artifactEntries, assetPage]);
-  const totalLogPages = Math.max(1, Math.min(5, Math.ceil(recentLogs.length / 5)));
+  const totalLogPages = Math.max(1, Math.min(5, Math.ceil(recentLogs.length / 8)));
   const totalArtifactPages = Math.max(1, Math.min(5, Math.ceil(artifactEntries.length / 5)));
 
   useEffect(() => {
@@ -150,26 +150,26 @@ export default function AutomationPage({ systemStatus, onStatusRefresh }: Props)
   return (
     <>
       <section className="space-y-sm">
-        <h1 className="text-display-lg font-display-lg text-on-background">시스템 자동화 허브</h1>
-        <p className="text-on-surface-variant text-body-base whitespace-nowrap overflow-hidden text-ellipsis">
+        <h1 className="text-[48px] leading-[56px] text-on-background" style={{ fontFamily: '"Noto Serif", serif' }}>시스템 자동화 허브</h1>
+        <p className="text-on-surface-variant whitespace-nowrap overflow-hidden text-ellipsis" style={{ fontFamily: "Manrope, sans-serif" }}>
           지속적인 음악 분석, 메타데이터 보강 및 분산 클러스터 전반의 자동 시스템 동기화를 위한 고급 오케스트레이션 엔진입니다.
         </p>
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-4 gap-gutter">
         {[
-          { title: "현재 단계", value: stepLabels[status?.current_step ?? "idle"], detail: status?.progress_label ?? "대기 중", icon: "settings_input_component", color: "text-primary" },
-          { title: "비교 가능", value: status?.comparison_ready ? "준비됨" : "기준 대기", detail: status?.comparison_ready ? "직전 데이터 있음" : "첫 수집 대기", icon: "compare_arrows", color: "text-primary" },
-          { title: "다음 예약", value: status?.schedule_enabled ? timeValue : "비활성", detail: status?.next_run_at ? formatDateTime(status.next_run_at) : "예약 정보 없음", icon: "schedule", color: "text-primary" },
-          { title: "최근 결과", value: status?.last_result ?? "-", detail: message || status?.last_error || "상태 대기", icon: "check_circle", color: String(status?.last_result).includes("success") ? "text-[#4CAF50]" : "text-primary" },
+          { title: "현재 단계", value: stepLabels[status?.current_step ?? "idle"], detail: status?.progress_label ?? "대기 중", icon: "settings_input_component", color: "text-[#e9c176]" },
+          { title: "비교 가능", value: status?.comparison_ready ? "준비됨" : "기준 대기", detail: status?.comparison_ready ? "직전 데이터 있음" : "첫 수집 대기", icon: "compare_arrows", color: "text-[#e9c176]" },
+          { title: "다음 예약", value: status?.schedule_enabled ? timeValue : "비활성", detail: status?.next_run_at ? formatDateTime(status.next_run_at) : "예약 정보 없음", icon: "schedule", color: "text-[#e9c176]" },
+          { title: "최근 결과", value: status?.last_result ?? "-", detail: message || status?.last_error || "상태 대기", icon: "check_circle", color: String(status?.last_result).includes("success") ? "text-[#4CAF50]" : "text-[#e9c176]" },
         ].map((item) => (
-          <div key={item.title} className="glass-card p-sm rounded-xl space-y-xs">
-            <span className="text-label-sm font-label-sm text-surface-tint uppercase">{item.title}</span>
+          <div key={item.title} className="glass-card p-sm rounded-xl space-y-xs border border-[#e9c176]/10">
+            <span className="text-label-sm uppercase text-[#e9c176]" style={{ fontFamily: "Manrope, sans-serif" }}>{item.title}</span>
             <div className="flex items-center justify-between">
-              <span className="text-headline-md font-headline-md">{item.value}</span>
+              <span className="text-[32px] leading-10" style={{ fontFamily: '"Noto Serif", serif' }}>{item.value}</span>
               <span className={`material-symbols-outlined ${item.color}`}>{item.icon}</span>
             </div>
-            <p className="text-data-mono font-data-mono text-on-surface-variant text-xs break-words">{item.detail}</p>
+            <p className="text-xs break-words text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>{item.detail}</p>
           </div>
         ))}
       </section>
@@ -193,24 +193,24 @@ export default function AutomationPage({ systemStatus, onStatusRefresh }: Props)
                 <span>{currentProgress}%</span>
               </div>
               <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-primary-container to-secondary-container rounded-full transition-[width] duration-700 ease-out" style={{ width: `${currentProgress}%` }}></div>
+                <div className="h-full rounded-full bg-gradient-to-r from-[#604403] to-[#e9c176] transition-[width] duration-700 ease-out" style={{ width: `${currentProgress}%` }}></div>
               </div>
             </div>
             <form className="grid grid-cols-1 md:grid-cols-2 gap-md items-end" onSubmit={handleScheduleSave}>
               <div className="space-y-xs">
                 <label className="text-label-sm font-label-sm text-on-surface-variant">예약 시간 (24시)</label>
                 <input
-                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-sm py-xs text-on-surface focus:border-secondary-container focus:ring-1 focus:ring-secondary-container outline-none transition-all"
+                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-sm py-xs text-on-surface focus:border-[#e9c176] focus:ring-1 focus:ring-[#e9c176]/40 outline-none transition-all"
                   type="text"
                   value={timeValue}
                   onChange={(e) => setTimeValue(e.target.value)}
                 />
               </div>
               <div className="flex gap-xs">
-                <button type="button" onClick={handleRunNow} className="flex-1 bg-secondary-container text-white font-label-sm px-md py-2.5 rounded-lg hover:brightness-110 active:scale-[0.98] transition-all">
+                <button type="button" onClick={handleRunNow} className="flex-1 bg-[#604403] text-[#dab36a] font-label-sm px-md py-2.5 rounded-lg hover:brightness-110 active:scale-[0.98] transition-all">
                   지금 실행
                 </button>
-                <button type="submit" className="flex-1 border border-primary text-primary font-label-sm px-md py-2.5 rounded-lg hover:bg-primary/10 active:scale-[0.98] transition-all">
+                <button type="submit" className="flex-1 border border-[#e9c176] text-[#e9c176] font-label-sm px-md py-2.5 rounded-lg hover:bg-[#e9c176]/10 active:scale-[0.98] transition-all">
                   자동화 저장
                 </button>
               </div>
@@ -231,7 +231,7 @@ export default function AutomationPage({ systemStatus, onStatusRefresh }: Props)
               <div key={item.name} className="flex items-center justify-between p-sm rounded-lg hover:bg-white/5 transition-colors">
                 <div className="flex items-center gap-md">
                   <div className="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center">
-                    <span className="material-symbols-outlined text-secondary">{item.icon}</span>
+                    <span className="material-symbols-outlined text-[#e9c176]">{item.icon}</span>
                   </div>
                   <div>
                     <p className="text-on-surface font-headline-md text-base">{item.name}</p>
@@ -250,11 +250,11 @@ export default function AutomationPage({ systemStatus, onStatusRefresh }: Props)
           <div className="px-md py-sm border-b border-white/5 flex items-center justify-between">
             <h2 className="text-label-sm font-label-sm text-on-surface-variant uppercase">실행 로그</h2>
             <div className="flex items-center gap-2">
-              <button className="flex items-center gap-xs text-primary hover:text-white transition-colors" onClick={() => refresh()}>
+              <button className="flex items-center gap-xs text-[#e9c176] hover:text-white transition-colors" onClick={() => refresh()}>
                 <span className="material-symbols-outlined text-sm">refresh</span>
                 <span className="text-label-sm">새로고침</span>
               </button>
-              <button className="rounded-lg border border-primary-container px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-container/10 transition-colors" onClick={() => setShowLogs(true)}>
+              <button className="rounded-lg border border-[#e9c176] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#e9c176]/10 transition-colors" onClick={() => setShowLogs(true)}>
                 모두보기
               </button>
             </div>
@@ -271,14 +271,14 @@ export default function AutomationPage({ systemStatus, onStatusRefresh }: Props)
               <tbody className="text-sm divide-y divide-white/5">
                 {pagedLogs.map((entry: any, index: number) => (
                   <tr key={`${entry.time}-${index}`} className="hover:bg-white/5 align-top">
-                    <td className="px-md py-sm text-primary whitespace-nowrap">{stepLabels[entry.step] ?? entry.step}</td>
+                    <td className="px-md py-sm text-[#e9c176] whitespace-nowrap">{stepLabels[entry.step] ?? entry.step}</td>
                     <td className={`px-md py-sm ${String(entry.message).includes("완료") ? "text-[#4CAF50]" : "text-on-surface"}`}>{entry.message}</td>
                     <td className="px-md py-sm text-slate-400 whitespace-nowrap">{formatDateTime(entry.time)}</td>
                   </tr>
                 ))}
                 {!recentLogs.length ? (
                   <tr className="hover:bg-white/5">
-                    <td className="px-md py-sm text-primary">대기</td>
+                    <td className="px-md py-sm text-[#e9c176]">대기</td>
                     <td className="px-md py-sm text-on-surface">로그가 아직 없습니다.</td>
                     <td className="px-md py-sm text-slate-500">-</td>
                   </tr>
@@ -319,7 +319,7 @@ export default function AutomationPage({ systemStatus, onStatusRefresh }: Props)
               pagedArtifacts.map((item: any) => (
                 <div key={`${item.relative_path}-${item.modified_at}`} className="flex items-center justify-between p-sm rounded-lg hover:bg-white/5 group transition-all">
                   <div className="flex items-center gap-sm min-w-0">
-                    <span className="material-symbols-outlined text-secondary">description</span>
+                    <span className="material-symbols-outlined text-[#e9c176]">description</span>
                     <div className="min-w-0">
                       <p className="text-on-surface text-sm font-medium">{item.name}</p>
                       <p className="text-data-mono text-[10px] text-on-surface-variant break-all">{item.relative_path}</p>
@@ -330,7 +330,7 @@ export default function AutomationPage({ systemStatus, onStatusRefresh }: Props)
             ) : (
               <div className="flex items-center justify-between p-sm rounded-lg">
                 <div className="flex items-center gap-sm">
-                  <span className="material-symbols-outlined text-secondary">description</span>
+                  <span className="material-symbols-outlined text-[#e9c176]">description</span>
                   <div>
                     <p className="text-on-surface text-sm font-medium">산출물이 아직 없습니다.</p>
                     <p className="text-data-mono text-[10px] text-on-surface-variant uppercase">데이터 없음</p>
@@ -365,7 +365,7 @@ export default function AutomationPage({ systemStatus, onStatusRefresh }: Props)
             <button
               type="button"
               onClick={() => setShowAssets(true)}
-              className="w-full rounded-lg border border-primary-container py-2 text-sm font-medium text-white hover:bg-primary-container/10 transition-colors"
+              className="w-full rounded-lg border border-[#e9c176] py-2 text-sm font-medium text-white hover:bg-[#e9c176]/10 transition-colors"
             >
               모든 자산 보기
             </button>

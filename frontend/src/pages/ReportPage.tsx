@@ -57,15 +57,15 @@ export default function ReportPage() {
   return (
     <>
       <section className="space-y-sm">
-        <h1 className="text-display-lg font-display-lg text-on-background">리포트 허브</h1>
-        <p className="text-on-surface-variant text-body-base">생성된 차트 분석 리포트를 목록과 본문으로 바로 읽을 수 있습니다.</p>
+        <h1 className="text-[48px] leading-[56px] text-on-background" style={{ fontFamily: '"Noto Serif", serif' }}>리포트 허브</h1>
+        <p className="text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>생성된 차트 분석 리포트를 목록과 본문으로 바로 읽을 수 있습니다.</p>
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-gutter min-h-[720px]">
         <div className="lg:col-span-4 glass-card rounded-xl overflow-hidden flex flex-col">
           <div className="flex items-center justify-between border-b border-white/5 px-md py-sm">
-            <h2 className="text-label-sm font-label-sm uppercase text-on-surface-variant">리포트 목록</h2>
-            <button className="text-sm text-primary hover:text-white transition-colors" onClick={() => loadReports()}>
+            <h2 className="text-label-sm uppercase text-[#e9c176]" style={{ fontFamily: "Manrope, sans-serif" }}>리포트 목록</h2>
+            <button className="text-sm text-[#e9c176] hover:text-white transition-colors" onClick={() => loadReports()} style={{ fontFamily: "Manrope, sans-serif" }}>
               새로고침
             </button>
           </div>
@@ -77,23 +77,23 @@ export default function ReportPage() {
                   type="button"
                   onClick={() => setSelected(item.name)}
                   className={`w-full rounded-xl border p-sm text-left transition-colors ${
-                    selected === item.name ? "border-secondary-container bg-secondary-container/10" : "border-white/10 bg-white/5 hover:bg-white/10"
+                    selected === item.name ? "border-[#e9c176] bg-[#604403]/10" : "border-white/10 bg-white/5 hover:bg-white/10"
                   }`}
                 >
-                  <div className="text-sm font-semibold text-white break-all">{item.name}</div>
-                  <div className="mt-1 text-xs text-slate-400">{formatDateTime(item.timestamp)}</div>
+                  <div className="text-sm font-semibold text-white break-all" style={{ fontFamily: "Manrope, sans-serif" }}>{item.name}</div>
+                  <div className="mt-1 text-xs text-slate-400" style={{ fontFamily: "Manrope, sans-serif" }}>{formatDateTime(item.timestamp)}</div>
                 </button>
               ))
             ) : (
-              <div className="rounded-xl border border-white/10 bg-white/5 p-sm text-sm text-slate-300">생성된 리포트가 없습니다.</div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-sm text-sm text-slate-300" style={{ fontFamily: "Manrope, sans-serif" }}>생성된 리포트가 없습니다.</div>
             )}
           </div>
         </div>
 
         <div className="lg:col-span-8 glass-card rounded-xl overflow-hidden flex flex-col">
           <div className="flex items-center justify-between border-b border-white/5 px-md py-sm">
-            <h2 className="text-label-sm font-label-sm uppercase text-on-surface-variant">리포트 리더</h2>
-            <div className="text-xs text-slate-400">{selected || "선택 없음"}</div>
+            <h2 className="text-label-sm uppercase text-[#e9c176]" style={{ fontFamily: "Manrope, sans-serif" }}>리포트 리더</h2>
+            <div className="text-xs text-slate-400" style={{ fontFamily: "Manrope, sans-serif" }}>{selected || "선택 없음"}</div>
           </div>
           <div className="flex-1 overflow-y-auto px-md py-md">
             {error ? <div className="rounded-xl border border-red-500/20 bg-red-950/40 p-sm text-sm text-red-200">{error}</div> : null}

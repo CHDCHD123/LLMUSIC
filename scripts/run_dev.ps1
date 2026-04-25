@@ -26,7 +26,7 @@ function Stop-ChildProcess {
     if ($null -ne $Process) {
         try {
             if (-not $Process.HasExited) {
-                Stop-Process -Id $Process.Id -Force -ErrorAction SilentlyContinue
+                taskkill /PID $Process.Id /T /F | Out-Null
             }
         } catch {
         }

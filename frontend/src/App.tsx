@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import AppModal from "./components/AppModal";
 import AutomationPage from "./pages/AutomationPage";
 import HomePage from "./pages/HomePage";
 import ReportPage from "./pages/ReportPage";
@@ -49,12 +50,12 @@ function TopStatusBar({ status, onRefresh }: { status: any; onRefresh: () => voi
           return (
             <div key={item.label} className="flex items-center gap-xs">
               <div className={`w-1.5 h-1.5 rounded-full${pulse}${shadow}`} style={{ backgroundColor: color }} />
-              <span className="font-label-sm text-label-sm text-on-surface-variant">{item.label}</span>
+              <span className="font-label-sm text-label-sm text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>{item.label}</span>
             </div>
           );
         })}
       </div>
-      <button className="flex items-center gap-xs text-primary font-label-sm text-label-sm hover:opacity-80 transition-opacity" onClick={onRefresh}>
+      <button className="flex items-center gap-xs font-label-sm text-label-sm text-[#e9c176] hover:opacity-80 transition-opacity" onClick={onRefresh} style={{ fontFamily: "Manrope, sans-serif" }}>
         <span className="material-symbols-outlined text-[16px]">sync</span>
         새로고침
       </button>
@@ -76,7 +77,7 @@ function TopAppBar({ tab, onTabChange, onRefresh, status }: { tab: TabKey; onTab
       <button type="button" className="flex items-center gap-sm min-w-[220px] text-left" onClick={() => onTabChange("home")}>
         <img src="/LLMUSICLOGO.png" alt="LLMUSIC logo" className="h-9 w-9 rounded-lg object-cover" />
         <div className="flex flex-col leading-none">
-          <div className="text-xl font-black tracking-tighter text-white drop-shadow-[0_0_8px_rgba(26,35,126,0.4)]">LLMUSIC</div>
+          <div className="text-xl font-black tracking-tighter text-white">LLMUSIC</div>
           <div className="text-[10px] uppercase tracking-[0.22em] text-slate-500">Intelligence Hub</div>
         </div>
       </button>
@@ -89,7 +90,7 @@ function TopAppBar({ tab, onTabChange, onRefresh, status }: { tab: TabKey; onTab
               onClick={() => onTabChange(item.key)}
               className={
                 item.key === tab
-                  ? "font-inter tracking-tight font-medium text-indigo-400 border-b-2 border-indigo-500 pb-1"
+                  ? "font-inter tracking-tight font-medium text-[#e9c176] border-b-2 border-[#e9c176] pb-1"
                   : "font-inter tracking-tight font-medium text-slate-400 hover:text-white transition-colors"
               }
             >
@@ -115,7 +116,7 @@ function TopAppBar({ tab, onTabChange, onRefresh, status }: { tab: TabKey; onTab
           Model: {activeModel}
         </div>
         <button className="p-base hover:bg-white/5 rounded-lg transition-all duration-200 active:scale-95" onClick={onRefresh}>
-          <span className="material-symbols-outlined text-indigo-500">sync</span>
+          <span className="material-symbols-outlined text-[#e9c176]">sync</span>
         </button>
       </div>
     </nav>
@@ -126,15 +127,73 @@ function Footer() {
   return (
     <footer className="w-full border-t border-white/5 bg-[#0A0C14] flex flex-col md:flex-row justify-between items-center px-8 py-12 gap-6">
       <div className="flex items-center gap-md">
-        <span className="text-indigo-500 font-bold">LLMUSIC</span>
+        <span className="font-bold text-[#e9c176]">LLMUSIC</span>
         <p className="font-inter text-xs uppercase tracking-widest text-slate-600">© 2026 LLMUSIC 기술 관리 엔진</p>
       </div>
       <div className="flex gap-lg">
         {["문서", "시스템 상태", "개인정보처리방침", "API"].map((item) => (
-          <a key={item} className="font-inter text-xs uppercase tracking-widest text-slate-600 hover:text-indigo-300 transition-colors" href="#">
+          <a key={item} className="font-inter text-xs uppercase tracking-widest text-slate-600 hover:text-[#e9c176] transition-colors" href="#">
             {item}
           </a>
         ))}
+      </div>
+    </footer>
+  );
+}
+
+function HomeTopBar({ onNavigate, onLoginClick }: { onNavigate: (tab: TabKey) => void; onLoginClick: () => void }) {
+  return (
+    <nav className="z-50 flex w-full items-center justify-between border-b border-white/10 bg-[#0F121D]/80 px-16 py-6 shadow-[0_0_15px_rgba(212,175,55,0.1)] backdrop-blur-xl">
+      <button type="button" className="text-2xl italic tracking-[0.18em] text-amber-500" style={{ fontFamily: '"Noto Serif", serif' }} onClick={() => onNavigate("home")}>
+        LLMUSIC
+      </button>
+      <div className="hidden items-center gap-16 md:flex">
+        {[
+          ["HOME", "home"],
+          ["RECOMMEND", "recommend"],
+          ["AUTOMATION", "automation"],
+          ["REPORTS", "reports"],
+        ].map(([label, target]) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => onNavigate(target as TabKey)}
+            className="text-sm uppercase tracking-[0.2em] text-white/70 transition-colors duration-500 hover:text-amber-500"
+            style={{ fontFamily: '"Noto Serif", serif' }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <div className="flex items-center gap-8">
+        <button
+          type="button"
+          onClick={onLoginClick}
+          className="text-sm uppercase tracking-[0.2em] text-amber-500 transition-colors duration-500 hover:text-amber-400"
+          style={{ fontFamily: '"Noto Serif", serif' }}
+        >
+          LOGIN
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+function HomeFooter() {
+  return (
+    <footer className="w-full bg-[#0F121D] px-16 py-20">
+      <div className="mx-auto flex max-w-7xl flex-col items-center gap-10">
+        <div className="flex flex-col items-center gap-6">
+          <div className="text-lg italic text-amber-500" style={{ fontFamily: '"Noto Serif", serif' }}>LLMUSIC</div>
+          <div className="flex gap-8">
+            {["LEGACY", "SHOWROOMS", "SUPPORT", "LEGAL"].map((item) => (
+              <a key={item} href="#" className="text-xs tracking-[0.18em] text-white/40 transition-all hover:text-white" style={{ fontFamily: '"Noto Serif", serif' }}>
+                {item}
+              </a>
+            ))}
+          </div>
+        </div>
+        <div className="text-center text-xs uppercase tracking-[0.18em] text-white/40" style={{ fontFamily: '"Noto Serif", serif' }}>© 2026 LLMUSIC. PULSING WITH POWER.</div>
       </div>
     </footer>
   );
@@ -144,6 +203,7 @@ export default function App() {
   const [tab, setTab] = useState<TabKey>(() => pathToTab(window.location.pathname));
   const [status, setStatus] = useState<any>(null);
   const [statusError, setStatusError] = useState("");
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
 
   async function refreshStatus(probe = false) {
     try {
@@ -173,17 +233,28 @@ export default function App() {
   }, []);
 
   return (
-    <div className="bg-background text-on-background font-body-base min-h-screen flex flex-col">
-      {tab === "recommend" ? <TopStatusBar status={status} onRefresh={() => refreshStatus(true)} /> : null}
-      <TopAppBar tab={tab} onTabChange={navigate} onRefresh={() => refreshStatus(true)} status={status} />
-      <main className="max-w-[1720px] mx-auto px-4 py-8 md:px-6 lg:px-8 space-y-8 flex-1 w-full">
+    <div className="relative min-h-screen overflow-hidden bg-background text-on-background font-body-base flex flex-col">
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_18%_16%,rgba(0,240,255,0.08),transparent_24%),radial-gradient(circle_at_84%_14%,rgba(182,0,248,0.07),transparent_20%),linear-gradient(180deg,#11131c_0%,#101117_50%,#0c0d13_100%)]" />
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px] opacity-[0.08]" />
+      <TopStatusBar status={status} onRefresh={() => refreshStatus(true)} />
+      <HomeTopBar onNavigate={navigate} onLoginClick={() => setLoginModalOpen(true)} />
+      <main className={`relative z-10 flex-1 w-full ${tab === "home" ? "" : "max-w-[1720px] mx-auto px-4 py-8 md:px-6 lg:px-8 space-y-8"}`}>
         {tab === "home" ? <HomePage onNavigate={navigate} /> : null}
         {tab === "recommend" ? <RecommendPage initialStatus={status} onStatusRefresh={() => refreshStatus(false)} /> : null}
         {tab === "automation" ? <AutomationPage systemStatus={status} onStatusRefresh={() => refreshStatus(false)} /> : null}
         {tab === "reports" ? <ReportPage /> : null}
       </main>
-      <Footer />
+      <div className="relative z-10">
+        <HomeFooter />
+      </div>
       {statusError ? <div className="fixed bottom-4 right-4 rounded-lg border border-red-500/30 bg-red-950/80 px-3 py-2 text-sm text-red-200">{statusError}</div> : null}
+      <AppModal
+        open={loginModalOpen}
+        title="준비중입니다"
+        description="로그인 기능은 아직 준비 중입니다. 디자인한 로그인 화면이 준비되면 이 구조에 그대로 연결할 수 있습니다."
+        confirmLabel="확인"
+        onClose={() => setLoginModalOpen(false)}
+      />
     </div>
   );
 }

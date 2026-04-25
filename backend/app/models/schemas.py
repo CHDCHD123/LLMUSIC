@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 
 class RecommendRequest(BaseModel):
-    emotion: str = Field(..., min_length=1)
+    emotion: str = ""
     situation: str = ""
     korean_only: bool = False
     variation: int = 0

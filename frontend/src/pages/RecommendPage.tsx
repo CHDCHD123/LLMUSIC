@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import AppModal from "../components/AppModal";
 import { fetchStatus, recommend } from "../services/api";
 
 const emotions = ["기쁨", "슬픔", "편안함", "에너지", "우울함", "집중", "설렘", "그리움", "몽환", "분노", "잔잔함", "로맨틱"];
@@ -30,8 +31,8 @@ function loadStoredState() {
 
 export default function RecommendPage({ initialStatus, onStatusRefresh }: Props) {
   const stored = typeof window !== "undefined" ? loadStoredState() : null;
-  const [emotion, setEmotion] = useState(stored?.emotion ?? "기쁨");
-  const [selectedSituation, setSelectedSituation] = useState(stored?.selectedSituation ?? "출근길");
+  const [emotion, setEmotion] = useState(stored?.emotion ?? "");
+  const [selectedSituation, setSelectedSituation] = useState(stored?.selectedSituation ?? "");
   const [customSituation, setCustomSituation] = useState(stored?.customSituation ?? "");
   const [koreanOnly, setKoreanOnly] = useState(stored?.koreanOnly ?? true);
   const [variation, setVariation] = useState(0);
@@ -39,6 +40,7 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
+  const [validationModalOpen, setValidationModalOpen] = useState(false);
 
   const situation = useMemo(
     () => [selectedSituation, customSituation.trim()].filter(Boolean).join(" / "),
@@ -66,6 +68,10 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
   }, [emotion, selectedSituation, customSituation, koreanOnly]);
 
   async function handleRecommend(nextVariation = variation) {
+    if (!emotion && !selectedSituation && !customSituation.trim()) {
+      setValidationModalOpen(true);
+      return;
+    }
     setLoading(true);
     setError("");
     try {
@@ -96,48 +102,79 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
   const openaiModel = status?.openai?.model ?? "OpenAI 미설정";
   const localModel = status?.local_models?.model_id ?? "로컬 모델 미설정";
   const activeModel = result?.model_used ?? openaiModel;
-  const failoverLabel = `1차 ${openaiModel} / 2차 ${localModel} / 3차 template-fallback`;
+  const failoverSteps = [
+    { order: "01", title: "Primary", value: openaiModel, active: activeModel === openaiModel },
+    { order: "02", title: "Fallback", value: localModel, active: activeModel === localModel },
+    { order: "03", title: "Template", value: "template-fallback", active: activeModel === "template-fallback" },
+  ];
 
   return (
     <>
       <header className="w-full flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div className="space-y-4 min-w-0">
-          <div className="flex items-center gap-sm text-primary mb-1">
+          <div className="mb-1 flex items-center gap-sm text-[#e9c176]">
             <span className="material-symbols-outlined text-[32px]">auto_awesome</span>
-            <span className="font-label-sm text-label-sm uppercase tracking-widest">AI 추천 엔진</span>
+            <span className="text-label-sm uppercase tracking-widest" style={{ fontFamily: "Manrope, sans-serif" }}>AI 추천 엔진</span>
           </div>
-          <h1 className="font-display-lg text-display-lg text-on-surface">당신의 감성을 찾으세요</h1>
-          <p className="text-on-surface-variant max-w-5xl font-body-base whitespace-nowrap overflow-hidden text-ellipsis">
+          <h1 className="text-[48px] leading-[56px] text-on-surface" style={{ fontFamily: '"Noto Serif", serif' }}>당신의 감성을 찾으세요</h1>
+          <p className="max-w-5xl text-on-surface-variant whitespace-nowrap overflow-hidden text-ellipsis" style={{ fontFamily: "Manrope, sans-serif" }}>
             정밀하게 설계된 음악 탐색을 경험하세요. 우리의 기술 엔진이 다양한 소스의 데이터를 통합하여 당신을 위한 완벽한 청각적 환경을 큐레이팅합니다.
           </p>
         </div>
-        <div className="flex w-full md:w-auto items-center gap-2 overflow-x-auto md:justify-end">
-          <span className="shrink-0 rounded-full border border-white/10 bg-surface-container-high px-3 py-2 font-label-sm text-label-sm text-on-surface-variant whitespace-nowrap">
-            {activeModel}
-          </span>
-          <span className="shrink-0 rounded-full border border-white/10 bg-surface-container-high px-3 py-2 text-[11px] text-on-surface-variant whitespace-nowrap">
-            {failoverLabel}
-          </span>
+        <div className="w-full md:w-auto md:min-w-[560px]">
+          <div className="rounded-xl border border-[#e9c176]/20 bg-[rgba(18,20,20,0.4)] p-3 backdrop-blur-xl">
+            <div className="mb-3 text-[11px] uppercase tracking-[0.18em] text-[#e9c176]" style={{ fontFamily: "Manrope, sans-serif" }}>
+              Failover Chain
+            </div>
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
+              {failoverSteps.map((step) => (
+                <div
+                  key={step.order}
+                  className={`rounded-lg border px-3 py-3 transition-all ${
+                    step.active
+                      ? "border-[#e9c176]/40 bg-[#604403]/25 shadow-[0_0_18px_rgba(233,193,118,0.12)]"
+                      : "border-white/10 bg-white/[0.03]"
+                  }`}
+                >
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-slate-400" style={{ fontFamily: "Manrope, sans-serif" }}>
+                      {step.order}
+                    </span>
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${step.active ? "bg-[#e9c176] shadow-[0_0_10px_rgba(233,193,118,0.8)]" : "bg-white/20"}`}
+                    />
+                  </div>
+                  <div className="mb-1 text-[11px] uppercase tracking-[0.15em] text-slate-400" style={{ fontFamily: "Manrope, sans-serif" }}>
+                    {step.title}
+                  </div>
+                  <div className={`break-words text-sm leading-5 ${step.active ? "text-[#f3d7a0]" : "text-on-surface-variant"}`} style={{ fontFamily: "Manrope, sans-serif" }}>
+                    {step.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </header>
 
       <section className="w-full">
-        <form className="bg-surface-container-low border border-white/5 rounded-xl p-md glass-effect" onSubmit={handleSubmit}>
+        <form className="rounded-xl border border-white/10 bg-[rgba(18,20,20,0.4)] p-md glass-effect" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-lg">
             <div className="lg:col-span-8 space-y-md">
               <div>
-                <label className="font-label-sm text-label-sm text-on-surface-variant block mb-sm">감정 선택</label>
+                <label className="block mb-sm text-label-sm text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>감정 선택</label>
                 <div className="flex flex-wrap gap-xs">
                   {emotions.map((item) => (
                     <button
                       key={item}
                       type="button"
-                      onClick={() => setEmotion(item)}
+                      onClick={() => setEmotion((current: string) => (current === item ? "" : item))}
                       className={
                         item === emotion
-                          ? "px-md py-xs bg-primary-container text-on-primary-container rounded-lg font-label-sm text-label-sm transition-all border border-primary/20"
-                          : "px-md py-xs bg-surface-container-highest text-on-surface-variant rounded-lg font-label-sm text-label-sm hover:bg-surface-variant transition-all"
+                          ? "px-md py-xs bg-[#604403] text-[#dab36a] rounded-lg text-label-sm transition-all border border-[#e9c176]/30"
+                          : "px-md py-xs bg-[rgba(255,255,255,0.04)] text-on-surface-variant rounded-lg text-label-sm hover:bg-white/10 transition-all"
                       }
+                      style={{ fontFamily: "Manrope, sans-serif" }}
                     >
                       {item}
                     </button>
@@ -146,18 +183,19 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
               </div>
 
               <div className="space-y-sm">
-                <label className="font-label-sm text-label-sm text-on-surface-variant block">상황 선택</label>
+                <label className="block text-label-sm text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>상황 선택</label>
                 <div className="flex flex-wrap gap-xs">
                   {situations.map((item) => (
                     <button
                       key={item}
                       type="button"
-                      onClick={() => setSelectedSituation(item)}
+                      onClick={() => setSelectedSituation((current: string) => (current === item ? "" : item))}
                       className={
                         item === selectedSituation
-                          ? "px-md py-xs bg-secondary-container text-white rounded-lg font-label-sm text-label-sm transition-all"
-                          : "px-md py-xs bg-surface-container-highest text-on-surface-variant rounded-lg font-label-sm text-label-sm hover:bg-surface-variant transition-all"
+                          ? "px-md py-xs bg-[#604403] text-[#dab36a] rounded-lg text-label-sm transition-all"
+                          : "px-md py-xs bg-[rgba(255,255,255,0.04)] text-on-surface-variant rounded-lg text-label-sm hover:bg-white/10 transition-all"
                       }
+                      style={{ fontFamily: "Manrope, sans-serif" }}
                     >
                       {item}
                     </button>
@@ -166,13 +204,14 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
               </div>
 
               <div>
-                <label className="font-label-sm text-label-sm text-on-surface-variant block mb-sm">자유입력</label>
+                <label className="block mb-sm text-label-sm text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>자유입력</label>
                 <input
-                  className="w-full bg-surface-container-lowest border border-outline-variant rounded-lg p-sm text-on-surface focus:ring-1 focus:ring-secondary-container focus:border-secondary-container transition-all outline-none font-body-base"
+                  className="w-full rounded-lg border border-[#e9c176]/20 bg-surface-container-lowest p-sm text-on-surface focus:ring-1 focus:ring-[#e9c176]/40 focus:border-[#e9c176]/40 transition-all outline-none"
                   placeholder="예: 비 내리는 밤, 창밖 보면서 멍때리는 느낌"
                   type="text"
                   value={customSituation}
                   onChange={(e) => setCustomSituation(e.target.value)}
+                  style={{ fontFamily: "Manrope, sans-serif" }}
                 />
               </div>
             </div>
@@ -188,12 +227,12 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
                     onClick={() => setKoreanOnly((prev: boolean) => !prev)}
                     className="flex items-center gap-3"
                   >
-                    <span className={`font-label-sm text-label-sm ${koreanOnly ? "text-secondary-container" : "text-on-surface-variant"}`}>KR</span>
-                    <div className={`w-12 h-6 rounded-full relative border transition-all ${koreanOnly ? "bg-secondary-container/20 border-secondary-container/40" : "bg-surface-container-lowest border-outline-variant"}`}>
+                    <span className={`${koreanOnly ? "text-[#dab36a]" : "text-on-surface-variant"}`} style={{ fontFamily: "Manrope, sans-serif" }}>KR</span>
+                    <div className={`w-12 h-6 rounded-full relative border transition-all ${koreanOnly ? "bg-[#604403]/20 border-[#e9c176]/40" : "bg-surface-container-lowest border-outline-variant"}`}>
                       <div
                         className={`absolute top-1 w-4 h-4 rounded-full transition-all ${
                           koreanOnly
-                            ? "right-1 bg-secondary-container shadow-[0_0_8px_rgba(30,149,242,0.6)]"
+                            ? "right-1 bg-[#e9c176] shadow-[0_0_8px_rgba(233,193,118,0.6)]"
                             : "left-1 bg-slate-400"
                         }`}
                       />
@@ -205,7 +244,8 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-xs">
                 <button
                   type="submit"
-                  className="w-full py-md bg-secondary-container text-white font-headline-md text-headline-md rounded-lg shadow-[0_0_20px_rgba(30,149,242,0.3)] hover:brightness-110 active:scale-[0.98] transition-all flex items-center justify-center gap-sm"
+                  className="w-full py-md rounded-lg border border-[#e9c176] text-[#e9c176] hover:bg-[linear-gradient(90deg,rgba(233,193,118,0.15)_0%,transparent_100%)] active:scale-[0.98] transition-all flex items-center justify-center gap-sm"
+                  style={{ fontFamily: "Manrope, sans-serif" }}
                 >
                   {loading ? (
                     <span className="loading-dots" aria-label="loading">
@@ -223,6 +263,7 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
                   disabled={loading || !result}
                   onClick={() => void handleRecommend(variation + 1)}
                   className="w-full py-md border border-white/10 text-on-surface rounded-lg hover:bg-white/5 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{ fontFamily: "Manrope, sans-serif" }}
                 >
                   다시 추천받기
                 </button>
@@ -235,17 +276,17 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
       <section className="w-full space-y-md">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-md pb-sm border-b border-white/5">
           <div className="space-y-base min-w-0 flex-1">
-            <h2 className="font-headline-md text-headline-md text-on-surface flex items-center gap-sm">
+            <h2 className="flex items-center gap-sm text-[32px] leading-10 text-on-surface" style={{ fontFamily: '"Noto Serif", serif' }}>
               선별된 추천 곡
-              <span className="text-secondary text-label-sm font-label-sm bg-secondary/10 px-sm py-1 rounded-full">
+              <span className="rounded-full bg-[#604403] px-sm py-1 text-label-sm text-[#dab36a]" style={{ fontFamily: "Manrope, sans-serif" }}>
                 {recommendations.length || 0}개의 트랙 발견
               </span>
             </h2>
-            <p className="text-on-surface-variant font-data-mono text-data-mono max-w-4xl break-words whitespace-normal leading-6">
+            <p className="max-w-4xl break-words whitespace-normal leading-6 text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>
               {result?.explanation ?? "추천을 실행하면 감정, 상황, 곡 메타데이터, 차트 흐름을 함께 반영한 설명이 여기 표시됩니다."}
             </p>
           </div>
-          <div className="font-data-mono text-data-mono text-secondary-fixed-dim bg-surface-container-high px-md py-sm rounded-lg border border-white/5 break-words whitespace-normal leading-5 max-w-full md:max-w-[360px]">
+          <div className="max-w-full rounded-lg border border-[#e9c176]/20 bg-[rgba(18,20,20,0.4)] px-md py-sm break-words whitespace-normal leading-5 text-[#e9c176] md:max-w-[360px]" style={{ fontFamily: "Manrope, sans-serif" }}>
             모델: {activeModel}
           </div>
         </div>
@@ -266,7 +307,7 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
                     href={loading ? "#" : item.preview_url || item.external_url || "#"}
                     target="_blank"
                     rel="noreferrer"
-                    className="w-16 h-16 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-2xl"
+                    className="w-16 h-16 rounded-full bg-[#e9c176] text-[#412d00] flex items-center justify-center shadow-2xl"
                   >
                     <span className="material-symbols-outlined text-[32px]">play_arrow</span>
                   </a>
@@ -275,7 +316,7 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
                   #{String(index + 1).padStart(2, "0")}
                 </div>
                 {!loading && item.match_score ? (
-                  <div className="absolute top-sm right-sm rounded-full bg-secondary-container/90 px-2 py-1 text-[11px] font-semibold text-white">
+                  <div className="absolute top-sm right-sm rounded-full bg-[#604403]/90 px-2 py-1 text-[11px] font-semibold text-[#dab36a]">
                     {item.match_score}점
                   </div>
                 ) : null}
@@ -287,12 +328,12 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
                     <p className="text-on-surface-variant text-label-sm font-data-mono break-words whitespace-normal">{loading ? "..." : item.artist}</p>
                   </div>
                   <a href={loading ? "#" : item.external_url || "#"} target="_blank" rel="noreferrer">
-                    <span className="material-symbols-outlined text-secondary-fixed-dim text-[20px]">link</span>
+                    <span className="material-symbols-outlined text-[#e9c176] text-[20px]">link</span>
                   </a>
                 </div>
                 <div className="flex justify-between items-start gap-sm pt-xs border-t border-white/5">
                   <div className="flex items-center gap-xs flex-wrap min-w-0">
-                    <span className="text-label-sm font-label-sm text-on-secondary-container bg-secondary-container/20 px-xs rounded">
+                    <span className="text-label-sm font-label-sm text-[#dab36a] bg-[#604403]/20 px-xs rounded">
                       {loading ? "..." : item.source || "iTunes"}
                     </span>
                     <span className="text-label-sm font-label-sm text-tertiary">{loading ? "..." : item.rank ? `차트 ${item.rank}위` : "추천 후보"}</span>
@@ -306,6 +347,13 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
           ))}
         </div>
       </section>
+      <AppModal
+        open={validationModalOpen}
+        title="입력이 필요합니다"
+        description="감정, 상황, 자유입력 중 하나 이상 제대로 입력해 주세요."
+        confirmLabel="확인"
+        onClose={() => setValidationModalOpen(false)}
+      />
     </>
   );
 }

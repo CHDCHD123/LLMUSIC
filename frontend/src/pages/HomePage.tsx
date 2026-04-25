@@ -5,193 +5,187 @@ type Props = {
 export default function HomePage({ onNavigate }: Props) {
   return (
     <div className="overflow-x-hidden">
-      <section className="relative overflow-hidden px-6 pb-[128px] pt-[128px]">
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-400 blur-[150px] opacity-10"></div>
-        <div className="pointer-events-none absolute right-0 top-0 h-[500px] w-[500px] rounded-full bg-fuchsia-500 blur-[120px] opacity-10"></div>
-        <div className="relative z-10 mx-auto flex max-w-[1440px] flex-col items-center text-center">
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 backdrop-blur-md">
-            <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,240,255,0.9)]"></span>
-            <span className="font-['Space_Grotesk'] text-xs font-bold uppercase tracking-[0.18em] text-cyan-300">Next-Gen Audio Platform</span>
-          </div>
-          <h1 className="max-w-5xl font-['Space_Grotesk'] text-[44px] font-bold leading-[1.08] tracking-[-0.04em] text-white md:text-[72px]">
-            <span className="whitespace-nowrap">LLMUSIC: 당신의 감성을 깨우는</span>
-            <br />
-            <span className="bg-gradient-to-r from-cyan-300 via-cyan-200 to-fuchsia-400 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-              AI 사운드 엔진
-            </span>
-          </h1>
-          <p className="mb-12 mt-8 max-w-4xl whitespace-nowrap font-['Be_Vietnam_Pro'] text-[18px] leading-[1.6] text-slate-300">
-            인공지능 추천과 시스템 자동화가 만난 차세대 음악 플랫폼. 지금 가장 화려한 음악 경험을 시작하세요.
-          </p>
-          <button
-            type="button"
-            onClick={() => onNavigate("recommend")}
-            className="group relative overflow-hidden rounded-xl border border-cyan-400/50 bg-gradient-to-r from-cyan-950 to-fuchsia-950 px-8 py-4 shadow-[0_0_20px_rgba(0,240,255,0.25)] transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(0,240,255,0.5)]"
-          >
-            <span className="relative z-10 flex items-center gap-2 font-['Space_Grotesk'] text-lg font-bold text-cyan-100">
-              무료로 시작하기
-              <span className="material-symbols-outlined text-xl">arrow_forward</span>
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-400/20 to-fuchsia-500/20 opacity-0 transition-opacity group-hover:opacity-100"></div>
-          </button>
+      <section className="relative flex min-h-[921px] items-center overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 z-10 bg-gradient-to-b from-transparent to-background"></div>
+          <div className="absolute inset-y-0 left-0 z-10 w-[46%] bg-gradient-to-r from-background via-background/80 to-transparent"></div>
+          <img
+            alt="abstract visualization of sound waves in deep indigo and gold"
+            className="h-full w-full object-cover object-center opacity-40 mix-blend-screen"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXE9Zy5VlvZghMsQs55t8bXHORfYu09eALS-VisnzDPMqpZc2So6iAELslRhZrnvGe8JSuUG-F3D_ucslDns3mKIusDwMPejqWmDlZ7g5JGBhvINoXAsIYFpT1z054gL7Dcnml_8iRsUMR0bVgkMkaO5uSGoQYo0N7HxWZGZ0OE5QlotLNdUq4dII_434duiUNsThzJ_e5-zpP5SPaViSO__KfOjyOpKUtGAkEOQIPjz6RCl87ft-WM0N_0kFOlpe4XAg8xqDCoANV"
+          />
         </div>
-      </section>
-
-      <section className="relative px-6 py-[64px]">
-        <div className="mx-auto max-w-[1440px]">
-          <h2 className="mb-16 text-center font-['Space_Grotesk'] text-[48px] font-bold leading-[1.2] tracking-[-0.03em] text-white">
-            강력한 <span className="text-cyan-400 drop-shadow-[0_0_8px_rgba(0,240,255,0.45)]">두 가지</span> 핵심 기능
-          </h2>
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.01)_100%)] p-8 backdrop-blur-[20px]">
-              <div className="absolute left-[-100%] top-0 h-full w-1/2 skew-x-[-25deg] bg-[linear-gradient(to_right,rgba(255,255,255,0)_0%,rgba(255,255,255,0.05)_50%,rgba(255,255,255,0)_100%)] transition-all duration-500 ease-in-out group-hover:left-[200%]"></div>
-              <div className="absolute right-0 top-0 p-6 opacity-20 transition-opacity group-hover:opacity-100">
-                <span className="material-symbols-outlined text-6xl text-cyan-400 drop-shadow-[0_0_15px_rgba(0,240,255,0.45)]">graphic_eq</span>
-              </div>
-              <h3 className="mb-4 font-['Space_Grotesk'] text-[32px] font-semibold leading-[1.3] tracking-[-0.02em] text-white">AI 감성 추천</h3>
-              <p className="mb-8 max-w-md font-['Be_Vietnam_Pro'] text-base leading-[1.6] text-slate-300">
-                지금 당신의 기분에 딱 맞는 곡을 AI가 직접 선곡합니다.
-                <br />
-                실시간 감정 분석을 통한 완벽한 사운드트랙.
-              </p>
-              <div className="relative mt-8 h-48 w-full">
-                <div className="absolute left-4 top-4 flex h-32 w-3/4 -rotate-6 items-center gap-4 rounded-xl border border-white/10 bg-gradient-to-br from-[#292a2e] to-[#121317] p-4 shadow-2xl">
-                  <div className="h-16 w-16 rounded-md border border-cyan-400/30 bg-fuchsia-500/20"></div>
-                  <div className="space-y-2">
-                    <div className="h-3 w-24 rounded bg-white/20"></div>
-                    <div className="h-2 w-16 rounded bg-white/10"></div>
-                  </div>
-                </div>
-                <div className="absolute right-4 top-8 z-10 flex h-32 w-3/4 rotate-3 items-center gap-4 rounded-xl border border-cyan-400/40 bg-gradient-to-br from-[#343439] to-[#121317] p-4 shadow-[0_0_30px_rgba(0,240,255,0.12)] backdrop-blur-3xl">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-md border border-cyan-400 bg-cyan-400/15 shadow-[0_0_10px_rgba(0,240,255,0.35)]">
-                    <span className="material-symbols-outlined text-cyan-300">play_arrow</span>
-                  </div>
-                  <div className="w-full space-y-2">
-                    <div className="h-4 w-32 rounded bg-cyan-300/80 shadow-[0_0_5px_rgba(0,240,255,0.35)]"></div>
-                    <div className="h-2 w-20 rounded bg-white/20"></div>
-                    <div className="mt-2 flex h-6 items-end gap-1">
-                      <div className="h-3 w-1 rounded-t bg-cyan-300"></div>
-                      <div className="h-5 w-1 rounded-t bg-cyan-300"></div>
-                      <div className="h-2 w-1 rounded-t bg-cyan-300"></div>
-                      <div className="h-6 w-1 rounded-t bg-cyan-300 shadow-[0_0_8px_rgba(0,240,255,0.45)]"></div>
-                      <div className="h-4 w-1 rounded-t bg-cyan-300"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        <div className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col items-center gap-8 px-16 md:flex-row">
+          <div className="flex w-full flex-col gap-4 md:w-2/3">
+            <div className="mb-4 flex items-center gap-4">
+              <div className="h-px w-12 bg-[#e9c176]" />
+              <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#e9c176]" style={{ fontFamily: "Manrope, sans-serif" }}>
+                Next-Gen Audio Platform
+              </span>
             </div>
-
-            <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.01)_100%)] p-8 backdrop-blur-[20px]">
-              <div className="absolute left-[-100%] top-0 h-full w-1/2 skew-x-[-25deg] bg-[linear-gradient(to_right,rgba(255,255,255,0)_0%,rgba(255,255,255,0.05)_50%,rgba(255,255,255,0)_100%)] transition-all duration-500 ease-in-out group-hover:left-[200%]"></div>
-              <div className="absolute right-0 top-0 p-6 opacity-20 transition-opacity group-hover:opacity-100">
-                <span className="material-symbols-outlined text-6xl text-fuchsia-400 drop-shadow-[0_0_15px_rgba(182,0,248,0.45)]">memory</span>
-              </div>
-              <h3 className="mb-4 font-['Space_Grotesk'] text-[32px] font-semibold leading-[1.3] tracking-[-0.02em] text-white">시스템 자동화 허브</h3>
-              <p className="mb-8 max-w-md font-['Be_Vietnam_Pro'] text-base leading-[1.6] text-slate-300">
-                복잡한 차트 분석과 데이터 처리를
-                <br />
-                24시간 잠들지 않는 AI가 자동으로 처리합니다.
-              </p>
-              <div className="relative mt-8 w-full rounded-xl border border-white/5 bg-black/10 p-4">
-                <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                  <span className="font-['Space_Grotesk'] text-sm font-bold uppercase tracking-[0.12em] text-slate-300">NODE STATUS</span>
-                  <div className="flex gap-2">
-                    <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_5px_rgba(0,240,255,0.45)]"></span>
-                    <span className="h-2 w-2 rounded-full bg-fuchsia-400 shadow-[0_0_5px_rgba(182,0,248,0.45)]"></span>
-                    <span className="h-2 w-2 rounded-full bg-red-400 opacity-50 shadow-[0_0_5px_rgba(255,90,90,0.35)]"></span>
-                  </div>
-                </div>
-                <div className="space-y-3 pt-4">
-                  <div className="flex items-center gap-4">
-                    <span className="w-16 font-['Be_Vietnam_Pro'] text-sm text-slate-400">Data In</span>
-                    <div className="flex h-1 flex-grow rounded bg-white/10 overflow-hidden">
-                      <div className="h-full w-3/4 bg-gradient-to-r from-transparent to-cyan-400 shadow-[0_0_10px_rgba(0,240,255,0.45)]"></div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="w-16 font-['Be_Vietnam_Pro'] text-sm text-slate-400">Processing</span>
-                    <div className="flex h-1 flex-grow rounded bg-white/10 overflow-hidden">
-                      <div className="h-full w-1/2 bg-gradient-to-r from-transparent to-fuchsia-400 shadow-[0_0_10px_rgba(182,0,248,0.35)]"></div>
-                    </div>
-                  </div>
-                </div>
-                <div className="relative mt-4 flex h-24 items-center justify-center overflow-hidden rounded border border-white/5 bg-white/[0.03]">
-                  <div className="absolute left-[20%] top-[30%] h-2 w-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(0,240,255,0.45)]"></div>
-                  <div className="absolute left-[60%] top-[50%] h-1.5 w-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_8px_rgba(182,0,248,0.35)]"></div>
-                  <div className="absolute left-[80%] top-[40%] h-2.5 w-2.5 rounded-full bg-cyan-200 shadow-[0_0_12px_rgba(125,244,255,0.45)]">
-                    <div className="absolute inset-0 rounded-full bg-cyan-200 animate-ping opacity-75"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="px-6 py-[64px]">
-        <div className="mx-auto max-w-[1440px]">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {[
-              ["bolt", "압도적 기술력", "가장 진보된 신경망 엔진이 만들어내는 무결점 사운드 환경.", "cyan"],
-              ["monitoring", "실시간 데이터", "글로벌 트렌드를 초당 단위로 분석하여 최적의 결과를 도출.", "fuchsia"],
-              ["touch_app", "직관적 인터페이스", "복잡한 설정 없이 누구나 즉시 사용할 수 있는 완벽한 UX.", "sky"],
-            ].map(([icon, title, text, tone]) => (
-              <div
-                key={title}
-                className={`rounded-xl border p-8 text-center transition-transform duration-300 hover:-translate-y-2 ${
-                  tone === "cyan"
-                    ? "border-cyan-400/40 shadow-[0_0_20px_rgba(0,240,255,0.12)]"
-                    : tone === "fuchsia"
-                      ? "border-fuchsia-400/40 shadow-[0_0_20px_rgba(182,0,248,0.12)]"
-                      : "border-cyan-200/30 shadow-[0_0_20px_rgba(125,244,255,0.12)]"
-                } glass-card`}
+            <h1
+              className="text-[72px] font-normal leading-[80px] tracking-[-0.02em] text-on-surface"
+              style={{ fontFamily: '"Noto Serif", serif' }}
+            >
+              당신의 감성을 깨우는
+              <br />
+              <span className="bg-gradient-to-r from-[#e9c176] to-[#ffdea5] bg-clip-text text-transparent">AI 사운드 엔진</span>
+            </h1>
+            <p
+              className="mt-6 max-w-2xl text-[18px] font-light leading-7 tracking-[0.01em] text-on-surface-variant"
+              style={{ fontFamily: "Manrope, sans-serif" }}
+            >
+              인공지능 추천과 시스템 자동화가 만난 차세대 음악 플랫폼.
+              <br />
+              지금 가장 화려한 음악 경험을 시작하세요.
+            </p>
+            <div className="mt-10">
+              <button
+                type="button"
+                onClick={() => onNavigate("recommend")}
+                className="cursor-pointer border border-[#e9c176] bg-transparent px-8 py-4 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#e9c176] transition-all duration-300 hover:bg-[linear-gradient(90deg,rgba(233,193,118,0.15)_0%,transparent_100%)]"
+                style={{ fontFamily: "Manrope, sans-serif" }}
               >
-                <div
-                  className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full border ${
-                    tone === "cyan"
-                      ? "border-cyan-400/30 bg-cyan-400/10"
-                      : tone === "fuchsia"
-                        ? "border-fuchsia-400/30 bg-fuchsia-400/10"
-                        : "border-cyan-200/30 bg-cyan-200/10"
-                  }`}
-                >
-                  <span
-                    className={`material-symbols-outlined text-4xl ${
-                      tone === "cyan"
-                        ? "text-cyan-300"
-                        : tone === "fuchsia"
-                          ? "text-fuchsia-300"
-                          : "text-cyan-100"
-                    }`}
-                  >
-                    {icon}
-                  </span>
-                </div>
-                <h4 className="mb-2 font-['Space_Grotesk'] text-2xl font-semibold text-white">{title}</h4>
-                <p className="font-['Be_Vietnam_Pro'] text-base leading-[1.6] text-slate-300">{text}</p>
-              </div>
-            ))}
+                시작하기
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      <section className="relative px-6 py-[128px] text-center">
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-cyan-400/10 to-transparent"></div>
-        <div className="relative z-10 mx-auto max-w-[1440px]">
-          <h2 className="mb-8 font-['Space_Grotesk'] text-[48px] font-bold leading-[1.2] tracking-[-0.03em] text-white">
-            지금 바로 <span className="bg-gradient-to-r from-cyan-300 to-fuchsia-400 bg-clip-text text-transparent font-black">LLMUSIC</span>의 파워를 경험하세요.
-          </h2>
-          <button
-            type="button"
-            onClick={() => onNavigate("recommend")}
-            className="group rounded-2xl border border-white/10 bg-[#292a2e] px-10 py-5 shadow-2xl transition-all duration-300 hover:border-cyan-400 hover:shadow-[0_0_30px_rgba(0,240,255,0.25)]"
+      <section className="mx-auto max-w-[1440px] px-16 py-20">
+        <div className="mb-10 flex flex-col items-center text-center">
+          <span className="mb-4 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#e9c176]" style={{ fontFamily: "Manrope, sans-serif" }}>Core Features</span>
+          <h2
+            className="text-[48px] font-normal leading-[56px] tracking-[-0.01em] text-on-surface"
+            style={{ fontFamily: '"Noto Serif", serif' }}
           >
-            <span className="flex items-center gap-3 font-['Space_Grotesk'] text-2xl font-semibold text-white transition-colors group-hover:text-cyan-300">
-              시스템 접속하기
-              <span className="material-symbols-outlined">power_settings_new</span>
-            </span>
-          </button>
+            강력한 <span className="text-[#e9c176]">두 가지</span> 핵심 기능
+          </h2>
         </div>
+        <div className="grid auto-rows-[320px] grid-cols-1 gap-6 md:grid-cols-12">
+          <div className="group relative overflow-hidden rounded-[8px] border border-white/10 bg-[rgba(18,20,20,0.4)] p-10 backdrop-blur-[20px] transition-all duration-500 hover:shadow-[0_0_15px_rgba(233,193,118,0.15)] md:col-span-8">
+            <div className="relative z-10 w-full md:w-2/3">
+              <span className="material-symbols-outlined mb-6 text-4xl text-[#e9c176]">graphic_eq</span>
+              <h3 className="mb-4 text-[32px] font-normal leading-10 text-on-surface" style={{ fontFamily: '"Noto Serif", serif' }}>AI 감성 추천</h3>
+              <p className="text-[16px] leading-6 text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>
+                지금 당신의 기분에 딱 맞는 곡을 AI가 직접 선곡합니다. 실시간 감정 분석을 통한 완벽한 사운드트랙.
+              </p>
+            </div>
+            <div className="absolute bottom-8 right-8 flex h-full w-1/2 items-end justify-end gap-2 opacity-30 transition-opacity duration-700 group-hover:opacity-50">
+              <div className="h-[20%] w-1 rounded-t-full bg-[#e9c176]"></div>
+              <div className="h-[60%] w-1 rounded-t-full bg-[#e9c176]"></div>
+              <div className="h-[40%] w-1 rounded-t-full bg-[#e9c176]"></div>
+              <div className="h-[80%] w-1 rounded-t-full bg-[#e9c176]"></div>
+              <div className="h-[30%] w-1 rounded-t-full bg-[#e9c176]"></div>
+              <div className="h-[50%] w-1 rounded-t-full bg-[#e9c176]"></div>
+              <div className="h-[90%] w-1 rounded-t-full bg-[#e9c176]"></div>
+            </div>
+          </div>
+          <div className="flex flex-col items-center justify-center rounded-[8px] border border-white/10 bg-[rgba(18,20,20,0.4)] p-10 text-center backdrop-blur-[20px] transition-all duration-500 hover:shadow-[0_0_15px_rgba(233,193,118,0.15)] md:col-span-4">
+            <span className="material-symbols-outlined mb-6 text-5xl text-[#e9c176]" style={{ fontVariationSettings: '"FILL" 1' }}>
+              touch_app
+            </span>
+            <h3 className="mb-2 text-[18px] font-semibold leading-7 text-on-surface" style={{ fontFamily: "Manrope, sans-serif" }}>직관적 인터페이스</h3>
+            <p className="text-[16px] leading-6 text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>복잡한 설정 없이 누구나 즉시 사용할 수 있는 완벽한 UX.</p>
+          </div>
+          <div className="group relative overflow-hidden rounded-[8px] border border-white/10 bg-[rgba(18,20,20,0.4)] backdrop-blur-[20px] transition-all duration-500 hover:shadow-[0_0_15px_rgba(233,193,118,0.15)] md:col-span-5">
+            <img
+              alt="close up of premium brushed metal audio equipment dial"
+              className="absolute inset-0 h-full w-full object-cover opacity-60 mix-blend-luminosity transition-opacity duration-700 group-hover:opacity-80"
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVpv5_RiTEMURmvb3_GIwepLuH0xsJEvEVBBrmXWYmAkr14GlYzVJxP9ZDxZDPzB1x3OusLDZ1vtmF9KOXtopLDtVMTwL7dT33RWCAXcVdPW7nb5t6vHwknCj_Dv8rgMSQfUPiRFmaoxW1PAlYQU_JQv7yUXv_aZ4Pa2Chg_Dt2bbLZFEVgWj67fVFshJLW5JY1YEuCztyz99_um0CMsJ_3b_pGia9Zl85rbHhF900ce80nBUjPQlXYFXnOqYpVWJLCeyI2E7hWcww"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent"></div>
+            <div className="absolute bottom-8 left-8 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#e9c176]" style={{ fontFamily: "Manrope, sans-serif" }}>LLMUSIC</div>
+          </div>
+          <div className="flex flex-col justify-center rounded-[8px] border border-white/10 bg-[rgba(18,20,20,0.4)] p-10 backdrop-blur-[20px] transition-all duration-500 hover:shadow-[0_0_15px_rgba(233,193,118,0.15)] md:col-span-7">
+            <div className="mb-8 flex items-center justify-between">
+              <h3 className="text-[32px] font-normal leading-10 text-on-surface" style={{ fontFamily: '"Noto Serif", serif' }}>실시간 데이터</h3>
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#e9c176]/30">
+                <div className="h-2 w-2 rounded-full bg-[#e9c176] shadow-[0_0_10px_rgba(233,193,118,0.8)]"></div>
+              </div>
+            </div>
+            <p className="max-w-lg text-[16px] leading-6 text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>
+              추천, 자동화, 리포트 흐름을 하나의 서비스 안에서 연결하고 현재 상태를 바로 확인할 수 있습니다.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-20 w-full border-y border-white/5 bg-surface-container-low py-[120px]">
+        <div className="mx-auto flex max-w-[1440px] flex-col items-center gap-[100px] px-16 md:flex-row">
+          <div className="relative w-full md:w-1/2">
+            <div className="relative z-10 rounded-[8px] border border-white/10 bg-[rgba(18,20,20,0.4)] p-8 shadow-[0_20px_40px_rgba(0,0,0,0.5)] backdrop-blur-[20px]">
+              <div className="mb-8 flex items-center justify-between border-b border-white/10 pb-4">
+                <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-on-surface" style={{ fontFamily: "Manrope, sans-serif" }}>System Status</span>
+                <span className="text-[12px] font-semibold uppercase tracking-[0.15em] text-[#e9c176]" style={{ fontFamily: "Manrope, sans-serif" }}>ACTIVE</span>
+              </div>
+              <div className="space-y-6">
+                {[
+                  ["data_usage", "Data In", "OPTIMIZED", "85%"],
+                  ["memory", "Processing", "100%", "60%"],
+                ].map(([icon, label, value, width]) => (
+                  <div key={label}>
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-2 text-[16px] leading-6 text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>
+                        <span className="material-symbols-outlined text-sm">{icon}</span>
+                        {label}
+                      </span>
+                      <span className="text-[16px] leading-6 text-on-surface" style={{ fontFamily: "Manrope, sans-serif" }}>{value}</span>
+                    </div>
+                    <div className="relative mt-4 h-px w-full bg-white/5">
+                      <div className="absolute left-0 top-0 h-full bg-[#e9c176]/50" style={{ width }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-3/4 w-3/4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#e9c176]/10 blur-[80px]"></div>
+          </div>
+          <div className="flex w-full flex-col gap-4 md:w-1/2">
+            <span className="mb-2 text-[12px] font-semibold uppercase tracking-[0.15em] text-[#e9c176]" style={{ fontFamily: "Manrope, sans-serif" }}>Smart Integration</span>
+            <h2 className="text-[48px] font-normal leading-[56px] text-on-surface" style={{ fontFamily: '"Noto Serif", serif' }}>시스템 자동화 허브</h2>
+            <p className="text-[18px] font-light leading-7 tracking-[0.01em] text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>
+              복잡한 차트 분석과 데이터 처리를 24시간 잠들지 않는 AI가 자동으로 처리합니다.
+            </p>
+            <ul className="mt-6 space-y-4 text-[16px] leading-6 text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>
+              {[
+                ["압도적 기술력", "가장 진보된 신경망 엔진이 만들어내는 무결점 사운드 환경."],
+                ["실시간 데이터", "글로벌 트렌드를 초당 단위로 분석하여 최적의 결과를 도출."],
+                ["직관적 인터페이스", "복잡한 설정 없이 누구나 즉시 사용할 수 있는 완벽한 UX."],
+              ].map(([title, body]) => (
+                <li key={title} className="flex items-start gap-4">
+                  <span className="material-symbols-outlined mt-1 text-lg text-[#e9c176]">check_circle</span>
+                  <span>
+                    <strong className="font-semibold text-on-surface">{title}: </strong>
+                    {body}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto flex max-w-[1440px] flex-col items-center px-16 py-[160px] text-center">
+        <h2 className="mb-8 text-[72px] font-normal leading-[80px] tracking-[-0.02em] text-on-surface" style={{ fontFamily: '"Noto Serif", serif' }}>
+          지금 바로 <span className="text-[#e9c176]">LLMUSIC</span>을 경험하세요.
+        </h2>
+        <p className="mb-12 max-w-2xl text-[18px] font-light leading-7 tracking-[0.01em] text-on-surface-variant" style={{ fontFamily: "Manrope, sans-serif" }}>
+          더 이상의 타협은 없습니다.
+          <br />
+          당신의 감각을 존중하는 마에스트로,
+          <br />
+          LLMUSIC과 함께 궁극의 청취 여정을 시작하십시오.
+        </p>
+        <button
+          type="button"
+          onClick={() => onNavigate("recommend")}
+          className="cursor-pointer border border-[#e9c176] bg-transparent px-12 py-5 text-[16px] font-semibold uppercase tracking-[0.15em] text-[#e9c176] transition-all duration-300 hover:bg-[linear-gradient(90deg,rgba(233,193,118,0.15)_0%,transparent_100%)] hover:shadow-[0_0_30px_rgba(233,193,118,0.2)]"
+          style={{ fontFamily: "Manrope, sans-serif" }}
+        >
+          시스템 접속하기
+        </button>
       </section>
     </div>
   );

@@ -77,7 +77,7 @@ class AutomationService:
                 "message": message,
             }
         )
-        self.state["activity_log"] = logs[-25:]
+        self.state["activity_log"] = logs[-40:]
 
     def _list_data_artifacts(self) -> list[dict[str, str]]:
         items: list[dict[str, str]] = []

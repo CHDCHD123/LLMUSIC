@@ -90,7 +90,12 @@ class RecommendationService:
         ).lower()
         emotion_keywords = [keyword.lower() for keyword in self._emotion_keywords(emotion, situation)]
         situation_bits = [chunk.strip().lower() for chunk in situation.replace(",", " ").split() if chunk.strip()]
-        reasons: list[str] = [f"{emotion} 감정 흐름과 맞는 후보"]
+        if emotion:
+            reasons: list[str] = [f"{emotion} 감정 흐름과 맞는 후보"]
+        elif situation:
+            reasons = [f"{situation} 상황과 맞는 후보"]
+        else:
+            reasons = ["입력 조건과 맞는 후보"]
         score = {"iTunes Search": 62, "MusicBrainz": 48, "Last.fm": 54, "지니차트": 74}.get(item.get("source"), 40)
 
         keyword_hits = [keyword for keyword in emotion_keywords if keyword in searchable][:3]
@@ -307,6 +312,8 @@ class RecommendationService:
         return unique
 
     def recommend(self, emotion: str, situation: str, korean_only: bool, variation: int = 0) -> tuple[list[RecommendationItem], str, str]:
+        emotion = emotion.strip()
+        situation = situation.strip()
         all_recommendations: list[dict] = []
         all_recommendations.extend(self.search_itunes(emotion, situation, korean_only=korean_only))
         if not korean_only:
@@ -325,7 +332,13 @@ class RecommendationService:
             f"{item['title']} - {item['artist']} ({item.get('reason', '매칭 후보')})"
             for item in top_candidates[:4]
         ) or "추천 후보 없음"
-        explanation, model_used = self.llm_service.generate(f"{emotion} 감정, {situation} 상황", songs_text)
+        context_parts: list[str] = []
+        if emotion:
+            context_parts.append(f"{emotion} 감정")
+        if situation:
+            context_parts.append(f"{situation} 상황")
+        context_text = ", ".join(context_parts) or "일반 청취 상황"
+        explanation, model_used = self.llm_service.generate(context_text, songs_text)
         items = [RecommendationItem(**item) for item in top_candidates]
         return items, explanation, model_used
 
