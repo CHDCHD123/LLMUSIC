@@ -11,25 +11,53 @@ import tempfile
 import threading
 import subprocess
 from typing import List, Dict, Optional, Tuple
+from pathlib import Path
 
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 
 # LLM용 import
+TRANSFORMERS_AVAILABLE = False
+GENAI_AVAILABLE = False
+
 try:
     from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
-    import google.generativeai as genai
     TRANSFORMERS_AVAILABLE = True
-    GENAI_AVAILABLE = True
-    print("Transformers 및 Google Generative AI 라이브러리 로드 성공")
+    print("Transformers 라이브러리 로드 성공")
 except ImportError as e:
-    TRANSFORMERS_AVAILABLE = False
-    GENAI_AVAILABLE = False
-    print(f"LLM 라이브러리 로드 실패: {e}")
-    print("Transformers 또는 Google Generative AI가 설치되지 않았을 수 있습니다.")
+    print(f"Transformers 라이브러리 로드 실패: {e}")
+
+try:
+    import google.generativeai as genai
+    GENAI_AVAILABLE = True
+    print("Google Generative AI 라이브러리 로드 성공")
+except ImportError as e:
+    print(f"Google Generative AI 라이브러리 로드 실패: {e}")
 
 # 환경변수 로드
 load_dotenv()
+
+LOCAL_LLM_FALLBACK_ENABLED = False
+DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+HF_CACHE_DIR = Path.home() / ".cache" / "huggingface" / "hub"
+
+
+def probe_gemini_connection() -> Dict[str, Optional[str]]:
+    if not (os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')):
+        return {"ok": False, "error": "GEMINI_API_KEY 또는 GOOGLE_API_KEY가 없습니다."}
+    if not GENAI_AVAILABLE:
+        return {"ok": False, "error": "google-generativeai 패키지가 설치되지 않았습니다."}
+    try:
+        api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(DEFAULT_GEMINI_MODEL)
+        response = model.generate_content("ping")
+        text = getattr(response, "text", "") or ""
+        if text.strip():
+            return {"ok": True, "error": None}
+        return {"ok": False, "error": "Gemini 응답 텍스트가 비어 있습니다."}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
 # -----------------------------
 # 유틸: 크롬 실행 경로 탐색 & 분리 세션으로 실행
@@ -270,30 +298,26 @@ class MusicRecommender:
         self.last_model_used = "Gemini (시도 중)"
         result = self.try_gemini_with_key(user_input, songs)
         if result:
-            return result, "Gemini"
-
-        self.last_model_used = "Qwen/Qwen2.5-1.5B-Instruct (시도 중)"
-        result = self.try_transformers_pipeline(user_input, songs)
-        if result:
-            return result, "Qwen/Qwen2.5-1.5B-Instruct"
-
-        self.last_model_used = "Transformers (DialoGPT) (시도 중)"
-        result = self.try_huggingface_inference(user_input, songs)
-        if result:
-            return result, "Transformers (DialoGPT)"
+            return result, DEFAULT_GEMINI_MODEL
 
         self.last_model_used = "없음"
+        if not (os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')):
+            return "Gemini API 키가 설정되지 않았습니다.", "없음"
+        if not GENAI_AVAILABLE:
+            return "google-generativeai 패키지가 설치되지 않아 Gemini를 호출할 수 없습니다.", "없음"
+        if not LOCAL_LLM_FALLBACK_ENABLED:
+            return "Gemini 호출에 실패했고 로컬 LLM fallback은 비활성화되어 있습니다.", "없음"
         return "LLM 연결에 실패했습니다. API 설정을 확인해주세요.", "없음"
 
     def try_gemini_with_key(self, user_input: str, songs: str) -> Optional[str]:
         try:
             if not GENAI_AVAILABLE:
                 return None
-            api_key = os.getenv('GEMINI_API_KEY')
+            api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
             if not api_key:
                 return None
             genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-2.0-flash")
+            model = genai.GenerativeModel(DEFAULT_GEMINI_MODEL)
             prompt = f"""
             사용자 상황: {user_input}
             추천된 음악: {songs}
@@ -478,13 +502,50 @@ def recommend():
 def get_status():
     spotify_ok = recommender.spotify is not None
     lastfm_ok = bool(recommender.lastfm_key)
-    llm_ok = bool(os.getenv('GEMINI_API_KEY')) or TRANSFORMERS_AVAILABLE
+    gemini_key_ok = bool(os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY'))
+    gemini_sdk_ok = GENAI_AVAILABLE
+    probe = request.args.get("probe") == "1"
+    probe_result = probe_gemini_connection() if probe else None
+    llm_ok = gemini_key_ok and gemini_sdk_ok
+    if probe_result is not None:
+        llm_ok = llm_ok and probe_result["ok"]
     last_llm_model = recommender.last_model_used
+    cached_local_models = []
+    if HF_CACHE_DIR.exists():
+        cached_local_models = sorted(
+            p.name.replace("models--", "").replace("--", "/")
+            for p in HF_CACHE_DIR.iterdir()
+            if p.is_dir() and p.name.startswith("models--")
+        )
 
     return jsonify({
-        "spotify": {"status": "연결됨" if spotify_ok else "미연결"},
-        "lastfm": {"status": "연결됨" if lastfm_ok else "미연결"},
-        "llm": {"status": "연결됨" if llm_ok else "미연결", "model_used": last_llm_model}
+        "spotify": {
+            "status": "연결됨" if spotify_ok else "미연결",
+            "client_id_configured": bool(os.getenv('SPOTIFY_CLIENT_ID')),
+            "client_secret_configured": bool(os.getenv('SPOTIFY_CLIENT_SECRET'))
+        },
+        "lastfm": {
+            "status": "연결됨" if lastfm_ok else "미연결",
+            "api_key_configured": bool(os.getenv('LASTFM_API_KEY'))
+        },
+        "gemini": {
+            "status": "연결됨" if llm_ok else "미연결",
+            "api_key_configured": gemini_key_ok,
+            "sdk_installed": gemini_sdk_ok,
+            "model": DEFAULT_GEMINI_MODEL,
+            "live_check_enabled": probe,
+            "live_ok": None if probe_result is None else probe_result["ok"],
+            "live_error": None if probe_result is None else probe_result["error"]
+        },
+        "llm": {
+            "status": "연결됨" if llm_ok else "미연결",
+            "model_used": last_llm_model,
+            "local_fallback_enabled": LOCAL_LLM_FALLBACK_ENABLED
+        },
+        "local_models": {
+            "cache_dir": str(HF_CACHE_DIR),
+            "cached_models": cached_local_models
+        }
     })
 
 # -----------------------------
