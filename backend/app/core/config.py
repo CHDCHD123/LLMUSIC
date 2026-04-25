@@ -16,6 +16,8 @@ class Settings:
     storage_dir: Path = backend_root / "storage"
     data_dir: Path = project_root / "data"
     archive_dir: Path = project_root / "delfile" / "data_archive"
+    frontend_dir: Path = project_root / "frontend"
+    frontend_dist_dir: Path = frontend_dir / "dist"
     model_dir: Path = project_root / "model" / "EXAONE-3.5-2.4B-Instruct"
     hf_cache_dir: Path = Path.home() / ".cache" / "huggingface" / "hub"
     timezone: str = "Asia/Seoul"

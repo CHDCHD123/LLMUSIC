@@ -96,6 +96,13 @@ npm install
 - `vite`
 - `typescript`
 
+프론트 빌드:
+
+```powershell
+cd frontend
+npm run build
+```
+
 로컬 모델 다운로드:
 
 ```powershell
@@ -178,6 +185,24 @@ uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8010
 cd frontend
 npm run dev -- --host 127.0.0.1 --port 5173
 ```
+
+빌드된 프론트를 FastAPI 단독으로 서빙:
+
+```powershell
+cd frontend
+npm run build
+cd ..
+venv\Scripts\activate
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8010
+```
+
+이 경우 접속 주소는 아래처럼 씁니다.
+
+- `http://127.0.0.1:8010/recommend`
+- `http://127.0.0.1:8010/automation`
+
+현재는 FastAPI가 `frontend/dist`를 직접 서빙하고 SPA fallback도 처리합니다.
+즉 `/recommend`, `/automation` 직접 진입이나 새로고침도 깨지지 않습니다.
 
 ## 자동화 페이지
 

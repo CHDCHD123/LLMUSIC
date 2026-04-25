@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.app.api.routes.automation import router as automation_router
 from backend.app.api.routes.health import router as health_router
@@ -40,3 +43,40 @@ app.include_router(health_router)
 app.include_router(music_router)
 app.include_router(automation_router)
 
+
+def _frontend_index_path() -> Path:
+    return settings.frontend_dist_dir / "index.html"
+
+
+def _serve_frontend_path(path: str = "") -> FileResponse:
+    index_path = _frontend_index_path()
+    if not index_path.exists():
+        raise HTTPException(status_code=503, detail="frontend/dist가 없습니다. 먼저 frontend 빌드를 실행해야 합니다.")
+
+    requested = (settings.frontend_dist_dir / path).resolve()
+    try:
+        requested.relative_to(settings.frontend_dist_dir.resolve())
+    except ValueError:
+        return FileResponse(index_path)
+
+    if path and requested.exists() and requested.is_file():
+        return FileResponse(requested)
+    return FileResponse(index_path)
+
+
+if settings.frontend_dist_dir.exists():
+    assets_dir = settings.frontend_dist_dir / "assets"
+    if assets_dir.exists():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
+
+
+@app.get("/", include_in_schema=False)
+def serve_frontend_index():
+    return _serve_frontend_path()
+
+
+@app.get("/{full_path:path}", include_in_schema=False)
+def serve_frontend_app(full_path: str):
+    if full_path.startswith(("api/", "health", "docs", "redoc", "openapi.json", "assets/")):
+        raise HTTPException(status_code=404, detail="Not found")
+    return _serve_frontend_path(full_path)
