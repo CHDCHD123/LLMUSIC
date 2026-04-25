@@ -4,6 +4,7 @@ export type RecommendPayload = {
   emotion: string;
   situation: string;
   korean_only: boolean;
+  variation?: number;
 };
 
 const jsonHeaders = {
@@ -49,4 +50,16 @@ export async function updateSchedule(enabled: boolean, time: string) {
   });
   if (!response.ok) throw new Error("스케줄 저장 실패");
   return response.json();
+}
+
+export async function fetchReports(): Promise<StatusResponse> {
+  const response = await fetch("/api/automation/reports");
+  if (!response.ok) throw new Error("리포트 목록 조회 실패");
+  return response.json();
+}
+
+export async function fetchReportContent(reportName: string): Promise<string> {
+  const response = await fetch(`/api/automation/reports/${encodeURIComponent(reportName)}`);
+  if (!response.ok) throw new Error("리포트 조회 실패");
+  return response.text();
 }

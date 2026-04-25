@@ -16,7 +16,7 @@ def recommend(request: Request, payload: RecommendRequest) -> RecommendResponse:
     recommendation_service = request.app.state.recommendation_service
     try:
         recommendations, explanation, model_used = recommendation_service.recommend(
-            payload.emotion, payload.situation, payload.korean_only
+            payload.emotion, payload.situation, payload.korean_only, payload.variation
         )
         return RecommendResponse(
             recommendations=recommendations,
@@ -25,4 +25,3 @@ def recommend(request: Request, payload: RecommendRequest) -> RecommendResponse:
         )
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"{type(exc).__name__}: {exc}") from exc
-

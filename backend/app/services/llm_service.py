@@ -90,16 +90,17 @@ class LLMService:
                         "role": "system",
                         "content": (
                             "당신은 음악 큐레이터입니다. 사용자의 감정과 상황에 맞춰 추천 곡이 왜 어울리는지 "
-                            "한국어로 2문장 이내로 설명하세요."
+                            "한국어로 3~4문장으로 설명하세요. 첫 문장은 전체 추천 방향, 다음 문장들은 왜 이 곡들이 맞는지 "
+                            "리듬, 분위기, 상황 적합성 관점에서 구체적으로 설명하세요."
                         ),
                     },
                     {
                         "role": "user",
-                        "content": f"상황: {user_input}\n추천곡: {songs_text}\n설명을 2문장 이내로 작성하세요.",
+                        "content": f"상황: {user_input}\n추천곡: {songs_text}\n3~4문장으로 구체적으로 설명하세요.",
                     },
                 ],
                 temperature=0.7,
-                max_tokens=120,
+                max_tokens=220,
             )
             text = response.choices[0].message.content or ""
             return text.strip() or None
@@ -132,14 +133,14 @@ class LLMService:
             messages = [
                 {
                     "role": "system",
-                    "content": (
-                        "당신은 음악 큐레이터입니다. 사용자의 감정과 상황, 곡 분위기를 연결해서 "
-                        "한국어로 2문장 이내로 설명하세요."
-                    ),
+                        "content": (
+                            "당신은 음악 큐레이터입니다. 사용자의 감정과 상황, 곡 분위기를 연결해서 "
+                            "한국어로 3~4문장으로 설명하세요."
+                        ),
                 },
                 {
                     "role": "user",
-                    "content": f"상황: {user_input}\n추천곡: {songs_text}\n자연스럽게 설명하세요.",
+                    "content": f"상황: {user_input}\n추천곡: {songs_text}\n3~4문장으로 자연스럽게 설명하세요.",
                 },
             ]
             prompt = self._tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
@@ -159,6 +160,6 @@ class LLMService:
     def _generate_template(self, user_input: str, songs_text: str) -> str:
         return (
             f"{user_input} 분위기에서는 {songs_text} 같은 곡이 감정선과 상황에 자연스럽게 맞습니다. "
-            "보컬 톤과 곡 분위기가 과하지 않게 이어져서 편하게 듣기 좋습니다."
+            "선정된 곡들은 텐션과 질감이 한 방향으로 모이지 않도록 섞어서, 같은 무드 안에서도 지루하지 않게 이어지도록 골랐습니다. "
+            "상황에 바로 얹기 좋은 곡과 감정을 조금 더 깊게 끌고 가는 곡을 함께 배치해 전체 흐름이 부드럽게 이어지도록 맞췄습니다."
         )
-

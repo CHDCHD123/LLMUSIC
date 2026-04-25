@@ -9,6 +9,7 @@ class RecommendRequest(BaseModel):
     emotion: str = Field(..., min_length=1)
     situation: str = ""
     korean_only: bool = False
+    variation: int = 0
 
 
 class RecommendationItem(BaseModel):
@@ -22,6 +23,8 @@ class RecommendationItem(BaseModel):
     lastfm_url: str | None = None
     rank: int | None = None
     source: str
+    reason: str | None = None
+    match_score: int | None = None
 
 
 class RecommendResponse(BaseModel):

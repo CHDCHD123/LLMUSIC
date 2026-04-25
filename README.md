@@ -1,6 +1,6 @@
 # LLMUSIC
 
-`LLMUSIC`는 감정 기반 음악 추천과 지니 차트 수집/분석/리포트 생성을 한 프로젝트에서 관리하는 서비스입니다.
+`LLMUSIC`는 감정 기반 음악 추천, 지니 차트 수집/비교 분석, 리포트 생성과 리포트 열람을 한 서비스 안에서 관리하는 프로젝트입니다.
 
 ## 현재 구조
 
@@ -36,6 +36,7 @@
 - `data/`에 `genie_diff_brief_*.json`이 있으면 지니 분석 결과도 추천에 반영
 - `data/`에 지니 분석 파일이 없으면 공개 API만으로 추천
 - 설명 생성은 `OpenAI` 우선, 실패 시 로컬 모델 fallback
+- 추천 페이지는 입력값만 세션에 유지하고, 추천 결과 자체는 서버 재시작/새로고침 시 복원하지 않습니다.
 
 현재는 `Spotify`를 사용하지 않습니다.
 
@@ -48,6 +49,8 @@
 - 현재 단계 확인
 - 최근 실행 로그 확인
 - 최근 산출물 확인
+- 실행 로그 전체 보기
+- `data/` 폴더 전체 산출물 목록 확인
 
 실행 순서:
 
@@ -66,6 +69,17 @@
 - `genie_diff_YYYY-MM-DD_HH-MM-SS.csv`
 - `genie_diff_brief_YYYY-MM-DD_HH-MM-SS.json`
 - `genie_report_YYYY-MM-DD_HH-MM-SS.txt`
+
+## 서비스 페이지
+
+현재 프론트 탭:
+
+- 메인
+- 추천
+- 자동화
+- 리포트
+
+리포트 탭에서는 생성된 `genie_report_*.txt` 목록과 본문을 서비스 안에서 바로 읽을 수 있습니다.
 
 ## 설치
 
@@ -102,7 +116,7 @@ venv\Scripts\python scripts\download_local_model.py
 ```env
 LASTFM_API_KEY=your_lastfm_api_key
 OPENAI_API_KEY=your_openai_api_key
-OPENAI_MODEL=gpt-4.1-mini
+OPENAI_MODEL=gpt-4o-mini
 LOCAL_LLM_MODEL_ID=LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct
 ```
 
@@ -138,10 +152,18 @@ uvicorn backend.app.main:app --host 127.0.0.1 --port 8010
 
 이 경우 아래 경로를 직접 열거나 새로고침해도 됩니다.
 
+- `http://127.0.0.1:8010/`
 - `http://127.0.0.1:8010/recommend`
 - `http://127.0.0.1:8010/automation`
+- `http://127.0.0.1:8010/reports`
 
 FastAPI가 `frontend/dist`를 직접 서빙하고 SPA fallback도 처리합니다.
+
+외부 공유가 필요하면 `cloudflared`를 별도로 설치한 뒤 아래처럼 `8010` 포트에 터널을 열면 됩니다.
+
+```powershell
+cloudflared tunnel --url http://localhost:8010
+```
 
 ## 참고
 

@@ -26,6 +26,7 @@ class AutomationService:
             "running": False,
             "current_step": "idle",
             "progress_label": "대기 중",
+            "step_started_at": None,
             "comparison_ready": False,
             "last_started_at": None,
             "last_finished_at": None,
@@ -78,9 +79,33 @@ class AutomationService:
         )
         self.state["activity_log"] = logs[-25:]
 
+    def _list_data_artifacts(self) -> list[dict[str, str]]:
+        items: list[dict[str, str]] = []
+        if not self.settings.data_dir.exists():
+            return items
+        for path in sorted(
+            [item for item in self.settings.data_dir.rglob("*") if item.is_file()],
+            key=lambda item: item.stat().st_mtime,
+            reverse=True,
+        ):
+            try:
+                relative = path.relative_to(self.settings.data_dir)
+            except ValueError:
+                relative = path.name
+            items.append(
+                {
+                    "name": path.name,
+                    "relative_path": str(relative).replace("\\", "/"),
+                    "path": str(path),
+                    "modified_at": datetime.fromtimestamp(path.stat().st_mtime).astimezone().isoformat(),
+                }
+            )
+        return items
+
     def _set_step(self, step: str, label: str, message: str | None = None) -> None:
         self.state["current_step"] = step
         self.state["progress_label"] = label
+        self.state["step_started_at"] = datetime.now().astimezone().isoformat()
         if message:
             self._append_log(step, message)
 
@@ -190,4 +215,9 @@ class AutomationService:
         job = self.scheduler.get_job("daily_genie_pipeline")
         if job and job.next_run_time:
             next_run = job.next_run_time.isoformat()
-        return {**self.state, "next_run_at": next_run, "timezone": self.settings.timezone}
+        return {
+            **self.state,
+            "next_run_at": next_run,
+            "timezone": self.settings.timezone,
+            "data_artifacts": self._list_data_artifacts(),
+        }

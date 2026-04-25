@@ -104,6 +104,13 @@ def generate_report(settings: Settings, input_folder: Path, output_folder: Path)
         previous_timestamp, previous_path = previous_brief_info
         with open(previous_path, "r", encoding="utf-8") as file:
             previous_brief_json = json.load(file)
+    else:
+        previous_timestamp_raw = brief_json.get("meta", {}).get("previous_timestamp")
+        if previous_timestamp_raw:
+            try:
+                previous_timestamp = datetime.fromisoformat(previous_timestamp_raw)
+            except ValueError:
+                previous_timestamp = None
 
     previous_report_info = _find_previous_report(current_timestamp, input_folder)
     previous_report_timestamp = previous_report_info[0] if previous_report_info else None

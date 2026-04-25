@@ -1,4 +1,4 @@
-import { Card, CardContent, Chip, Grid, Stack, Typography } from "@mui/material";
+import { Box, Card, CardContent, Chip, Divider, Grid, Stack, Typography } from "@mui/material";
 
 type StatusItem = { label: string; value: string; meta?: string };
 
@@ -17,7 +17,15 @@ function colorForValue(value: string) {
 
 export default function StatusPanel({ title, items, compact = false }: Props) {
   return (
-    <Card elevation={0} sx={{ borderRadius: 4, border: "1px solid", borderColor: "divider", backgroundColor: "background.paper" }}>
+    <Card
+      elevation={0}
+      sx={{
+        borderRadius: 5,
+        border: "1px solid",
+        borderColor: "rgba(15,23,42,0.08)",
+        backgroundColor: "background.paper",
+      }}
+    >
       <CardContent sx={{ p: compact ? 2 : 3 }}>
         <Stack spacing={2}>
           <Typography variant="h6">{title}</Typography>
@@ -27,28 +35,34 @@ export default function StatusPanel({ title, items, compact = false }: Props) {
                 <Card
                   elevation={0}
                   sx={{
-                    borderRadius: 3,
+                    borderRadius: 4,
                     border: "1px solid",
-                    borderColor: "divider",
-                    backgroundColor: "rgba(255,255,255,0.02)",
+                    borderColor: "rgba(15,23,42,0.08)",
+                    backgroundColor: "#f8fafc",
                   }}
                 >
                   <CardContent sx={{ p: 2 }}>
                     <Stack spacing={1}>
-                      <Typography variant="overline" sx={{ color: "text.secondary", lineHeight: 1.2 }}>
-                        {item.label}
-                      </Typography>
-                      <Chip
-                        label={item.value}
-                        color={colorForValue(item.value) as any}
-                        variant={item.value.includes("연결") || item.value.includes("준비") ? "filled" : "outlined"}
-                        sx={{ width: "fit-content" }}
-                      />
+                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
+                        <Typography variant="subtitle2">{item.label}</Typography>
+                        <Chip
+                          label={item.value}
+                          color={colorForValue(item.value) as any}
+                          variant={item.value.includes("연결") || item.value.includes("준비") ? "filled" : "outlined"}
+                          sx={{ width: "fit-content" }}
+                          size="small"
+                        />
+                      </Box>
+                      <Divider />
                       {item.meta ? (
                         <Typography variant="body2" color="text.secondary">
                           {item.meta}
                         </Typography>
-                      ) : null}
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          세부 정보 없음
+                        </Typography>
+                      )}
                     </Stack>
                   </CardContent>
                 </Card>

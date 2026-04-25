@@ -22,7 +22,7 @@ class Settings:
     hf_cache_dir: Path = Path.home() / ".cache" / "huggingface" / "hub"
     timezone: str = "Asia/Seoul"
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+    openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     lastfm_api_key: str = os.getenv("LASTFM_API_KEY", "")
     local_llm_model_id: str = os.getenv(
         "LOCAL_LLM_MODEL_ID",

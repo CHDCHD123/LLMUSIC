@@ -68,6 +68,9 @@ if settings.frontend_dist_dir.exists():
     assets_dir = settings.frontend_dist_dir / "assets"
     if assets_dir.exists():
         app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
+images_dir = settings.project_root / "images"
+if images_dir.exists():
+    app.mount("/images", StaticFiles(directory=images_dir), name="project-images")
 
 
 @app.get("/", include_in_schema=False)
@@ -77,6 +80,6 @@ def serve_frontend_index():
 
 @app.get("/{full_path:path}", include_in_schema=False)
 def serve_frontend_app(full_path: str):
-    if full_path.startswith(("api/", "health", "docs", "redoc", "openapi.json", "assets/")):
+    if full_path.startswith(("api/", "health", "docs", "redoc", "openapi.json", "assets/", "images/")):
         raise HTTPException(status_code=404, detail="Not found")
     return _serve_frontend_path(full_path)
