@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 
 from dotenv import load_dotenv
-from openai import OpenAI
 
 load_dotenv()
 
@@ -101,6 +100,8 @@ def _generate_with_openai(question: str, brief_text: str) -> str:
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY 환경변수가 없습니다.")
     model_name = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+    from openai import OpenAI
+
     client = OpenAI(api_key=api_key)
     response = client.chat.completions.create(
         model=model_name,
