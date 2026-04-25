@@ -1,20 +1,146 @@
 # LLMUSIC
 
-감정과 상황을 입력하면 음악을 추천해주는 웹 앱입니다. 실행 진입점은 `LLMUSIC.bat`이고, 지니 차트 수집 자동화는 `dags/`와 `docker-compose.yaml` 기준으로 동작합니다.
+`LLMUSIC`는 감정 기반 음악 추천, 지니 차트 크롤링, diff 분석, 보고서 생성, 예약 실행을 한 프로젝트 안에서 관리하는 서비스입니다.
 
-## 현재 유지 구조
+## 기존 구조와 변경점
 
-- `LLMUSIC.bat`: 윈도우 실행용 배치 파일
-- `musicapp.py`: Flask 서버 본체
-- `index.html`, `css/`, `js/`: 프론트엔드
-- `data/`: 지니 차트 수집 결과물
-- `dags/`: 지니 차트 자동 수집 파이프라인
-- `docker-compose.yaml`, `Dockerfile`: Airflow 실행용
-- `delfile/`: 현재 실행/자동화 기준으로 사용하지 않는 예전 파일 보관 폴더
+### 기존 구조
+
+- 루트에 `musicapp.py` 하나로 Flask 서버와 추천 로직이 섞여 있었음
+- `index.html`, `css/`, `js/` 정적 프론트가 루트에 직접 붙어 있었음
+- `dags/`에 크롤링, diff, 보고서, Airflow DAG가 함께 있었음
+- Docker/Airflow 중심 자동화 구조였음
+- 추천/크롤링/보고서/자동화 책임이 분리되어 있지 않았음
+
+### 현재 구조
+
+- `frontend/`
+  React + Vite + TypeScript 프론트엔드
+- `backend/`
+  FastAPI 백엔드
+- `backend/app/services/`
+  추천, LLM, 크롤링, diff, 보고서, 자동화 스케줄링을 모듈별로 분리
+- `data/`
+  크롤링 결과, diff 결과, 브리프 JSON, 보고서 TXT 저장
+- `model/`
+  로컬 fallback 모델 저장 위치
+- `delfile/`
+  예전 Flask/정적 프론트/Docker/Airflow 파일 보관
+
+즉 지금은
+
+- 프론트
+- 백엔드 API
+- 크롤링
+- 보고서
+- 자동화
+
+가 나뉘어 있습니다.
+
+## 현재 기능
+
+- 감정/상황 기반 음악 추천
+- OpenAI 우선 설명 생성
+- 로컬 EXAONE fallback
+- 최종 템플릿 fallback
+- 지니 차트 크롤링
+- 전일 diff 분석
+- OpenAI 보고서 생성
+- 자동화 페이지에서 수동 실행
+- 자동화 페이지에서 매일 실행 시간 설정
+- 동일 날짜 기준 성공 1회 실행 제한
+
+## 디렉터리 구조
+
+```text
+LLMUSIC/
+├─ backend/
+│  └─ app/
+│     ├─ api/routes/
+│     ├─ core/
+│     ├─ models/
+│     └─ services/
+├─ frontend/
+├─ data/
+├─ model/
+├─ scripts/
+├─ delfile/
+├─ LLMUSIC.bat
+├─ README.md
+└─ requirements.txt
+```
+
+## 설치해야 하는 것
+
+### 1. Python 가상환경 패키지
+
+루트 기준:
+
+```powershell
+venv\Scripts\python -m pip install -r requirements.txt
+```
+
+주요 패키지:
+
+- `fastapi`
+- `uvicorn[standard]`
+- `apscheduler`
+- `spotipy`
+- `openai`
+- `pandas`
+- `numpy`
+- `beautifulsoup4`
+- `transformers`
+- `torch`
+- `huggingface-hub`
+- `accelerate`
+
+### 2. 프론트엔드 패키지
+
+```powershell
+cd frontend
+npm install
+```
+
+주요 패키지:
+
+- `react`
+- `react-dom`
+- `vite`
+- `typescript`
+
+### 3. 로컬 모델
+
+로컬 fallback 모델 다운로드:
+
+```powershell
+venv\Scripts\python scripts\download_local_model.py
+```
+
+현재 모델:
+
+- `LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct`
+
+저장 위치:
+
+- `model/EXAONE-3.5-2.4B-Instruct`
+
+`model/`은 `.gitignore`에 포함되어 Git 업로드 대상에서 제외됩니다.
+
+## 대략적인 용량
+
+환경에 따라 차이가 있지만 현재 기준으로 보면 대략 이 정도를 잡으면 됩니다.
+
+- Python 가상환경 + 백엔드 패키지: 약 `2~4GB`
+- 프론트 `node_modules`: 약 `150~300MB`
+- EXAONE 로컬 모델: 약 `9~10GB`
+- `data/` 산출물: 날짜가 쌓일수록 증가, 현재는 수십 MB 수준
+
+즉 로컬 모델까지 포함하면 전체적으로 `12GB+` 정도는 여유를 보는 편이 안전합니다.
 
 ## 환경 변수
 
-루트에 `.env` 파일을 두고 아래 값을 설정합니다.
+루트 `.env`에 아래 값을 둡니다.
 
 ```env
 SPOTIFY_CLIENT_ID=your_spotify_client_id
@@ -22,135 +148,94 @@ SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 LASTFM_API_KEY=your_lastfm_api_key
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4.1-mini
+LOCAL_LLM_MODEL_ID=LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct
 ```
 
-설명:
+## 실행 방법
 
-- `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`: 앱 추천 기능에 사실상 필수
-- `LASTFM_API_KEY`: 없으면 Last.fm 추천만 비활성화
-- `OPENAI_API_KEY`: 앱 설명 생성과 자동화 보고서 생성에 사용
-- `OPENAI_MODEL`: 기본값은 `gpt-4.1-mini`
-
-## 로컬 실행 방법
-
-### 1. 가상환경 준비
-
-```powershell
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-### 2. 배치 파일로 실행
-
-가장 간단한 실행 방법:
+### 한 번에 실행
 
 ```powershell
 .\LLMUSIC.bat
 ```
 
-동작 방식:
+이 배치 파일은
 
-1. 현재 폴더로 이동
-2. `venv\Scripts\activate.bat`가 있으면 가상환경 활성화
-3. `python musicapp.py` 실행
-4. Flask 서버가 `http://127.0.0.1:5000`에서 열림
-5. 크롬이 있으면 브라우저 탭/창을 자동으로 엶
+- 백엔드 `FastAPI`를 `127.0.0.1:8010`
+- 프론트 `Vite`를 `127.0.0.1:5173`
 
-### 3. 직접 실행
+로 같이 띄웁니다.
+
+중요:
+
+- `LLMUSIC.bat`를 실행한 콘솔에서 `Ctrl + C`를 누르면
+- 백엔드와 프론트 프로세스를 같이 종료하도록 구성했습니다.
+
+### 수동 실행
+
+백엔드:
 
 ```powershell
 venv\Scripts\activate
-python musicapp.py
+uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8010
 ```
 
-## 데이터 수집 자동화 방법
-
-자동화 파이프라인은 `dags/airflow_genie.py` 기준으로 아래 순서로 실행됩니다.
-
-1. `crawler_genie.py`
-2. `diff_genie.py`
-3. `jsontxt_genie.py`
-
-생성 파일:
-
-- `data/genie_top100_YYYY-MM-DD.csv`: 지니 TOP100 원본 수집
-- `data/genie_diff_YYYY-MM-DD.csv`: 전일 대비 변화 분석
-- `data/genie_diff_brief_YYYY-MM-DD.json`: LLM용 요약 JSON
-- `data/genie_report_YYYY-MM-DD.txt`: Gemini 분석 리포트
-
-스케줄:
-
-- DAG ID: `genie_chart_pipeline`
-- 타임존: `Asia/Seoul`
-- 크론: `0 17 * * *`
-- 의미: 매일 한국 시간 오후 5시에 실행
-
-### Airflow로 자동화 실행
+프론트:
 
 ```powershell
-docker compose up airflow-init
-docker compose up -d
+cd frontend
+npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-그 다음 Airflow UI 접속:
+## 자동화 페이지
 
-- `http://localhost:8081`
-- 기본 계정: `airflow`
-- 기본 비밀번호: `airflow`
+자동화는 프론트에 별도 페이지로 들어가 있습니다.
 
-UI에서 `genie_chart_pipeline` DAG를 켜면 스케줄에 따라 자동 실행됩니다.
+할 수 있는 것:
 
-### 수동으로 한 번씩 실행
+- 수동으로 크롤링/분석/보고서 실행
+- 매일 실행 시간 저장
+- 자동 실행 끄기
+- 최근 실행 결과와 산출물 경로 확인
 
-크롤링:
+동작 방식:
 
-```powershell
-python dags\crawler_genie.py
-```
+1. 지니 크롤링
+2. diff 생성
+3. 브리프 JSON 생성
+4. OpenAI 보고서 생성
 
-변화 분석:
+저장 위치:
 
-```powershell
-python dags\diff_genie.py
-```
+- 전부 `data/` 폴더에 저장
 
-LLM 리포트 생성:
+예시 파일:
 
-```powershell
-python dags\jsontxt_genie.py
-```
+- `genie_top100_YYYY-MM-DD.csv`
+- `genie_diff_YYYY-MM-DD.csv`
+- `genie_diff_brief_YYYY-MM-DD.json`
+- `genie_report_YYYY-MM-DD.txt`
 
-주의:
+### 일 1회 제한
 
-- `diff_genie.py`는 최소 2일치 `genie_top100_*.csv`가 있어야 동작합니다.
-- `jsontxt_genie.py`는 같은 날짜의 `genie_diff_brief_*.json`과 `OPENAI_API_KEY`가 필요합니다.
+자동화는 같은 날짜에 성공 기준으로 1회만 실행됩니다.
 
-## LLM 구조
+즉:
 
-앱 설명 생성은 아래 순서로 동작합니다.
+- 수동 실행도 하루 1회 성공 후에는 스킵
+- 예약 실행도 하루 1회 성공 후에는 스킵
+- 실패한 경우에는 다시 시도 가능
 
-1. OpenAI API (`OPENAI_API_KEY`)
-2. 로컬 모델 `model/EXAONE-3.5-2.4B-Instruct`
-3. 코드 내 기본 템플릿 문장
+## API
 
-로컬 모델 다운로드:
+- `GET /health`
+- `GET /api/status?probe=1`
+- `POST /api/recommend`
+- `GET /api/automation/status`
+- `POST /api/automation/run`
+- `POST /api/automation/schedule`
 
-```powershell
-venv\Scripts\python scripts\download_local_model.py
-```
+## 참고
 
-로컬 모델 경로:
-
-- `model/EXAONE-3.5-2.4B-Instruct`
-- Git 업로드 제외: `.gitignore`에서 `model/` 제외 처리
-
-## 실행 확인 포인트
-
-- 앱 실행 확인: 브라우저에서 `http://127.0.0.1:5000`
-- 상태 확인 API: `http://127.0.0.1:5000/api/status`
-- 추천 API: `POST /api/recommend`
-
-## 정리 메모
-
-중복 또는 실험 성격 파일은 삭제하지 않고 `delfile/`로 이동했습니다.
+- Spotify API는 계정 상태에 따라 `403`이 날 수 있습니다.
+- 예전 구조 파일은 삭제하지 않고 `delfile/`로 이동했습니다.

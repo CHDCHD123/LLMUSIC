@@ -1,5 +1,3 @@
 @echo off
 cd /d "%~dp0"
-if exist venv\Scripts\activate.bat call venv\Scripts\activate.bat
-python musicapp.py
-if defined VIRTUAL_ENV call deactivate
+powershell -NoLogo -ExecutionPolicy Bypass -File "%~dp0scripts\run_dev.ps1"
