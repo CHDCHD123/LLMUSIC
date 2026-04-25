@@ -9,4 +9,3 @@ __pycache__/
 logs/
 plugins/
 dags/__pycache__/
-delfile/

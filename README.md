@@ -1,61 +1,135 @@
-# 🎵 간단한 음악 추천 시스템
+# LLMUSIC
 
-감정과 상황을 입력하면 맞춤 음악을 추천해주는 완벽한 시스템입니다.
+감정과 상황을 입력하면 음악을 추천해주는 웹 앱입니다. 실행 진입점은 `LLMUSIC.bat`이고, 지니 차트 수집 자동화는 `dags/`와 `docker-compose.yaml` 기준으로 동작합니다.
 
-## 🚀 빠른 시작
+## 현재 유지 구조
 
-### 1. API 키 설정
-`.env` 파일을 생성하고 다음 내용을 입력하세요:
+- `LLMUSIC.bat`: 윈도우 실행용 배치 파일
+- `musicapp.py`: Flask 서버 본체
+- `index.html`, `css/`, `js/`: 프론트엔드
+- `data/`: 지니 차트 수집 결과물
+- `dags/`: 지니 차트 자동 수집 파이프라인
+- `docker-compose.yaml`, `Dockerfile`: Airflow 실행용
+- `delfile/`: 현재 실행/자동화 기준으로 사용하지 않는 예전 파일 보관 폴더
 
-```bash
-# Spotify API (필수)
+## 환경 변수
+
+루트에 `.env` 파일을 두고 아래 값을 설정합니다.
+
+```env
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
-
-# Last.fm API (선택사항)
 LASTFM_API_KEY=your_lastfm_api_key
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
-### 2. 패키지 설치
-```bash
+설명:
+
+- `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`: 앱 추천 기능에 사실상 필수
+- `LASTFM_API_KEY`: 없으면 Last.fm 추천만 비활성화
+- `GEMINI_API_KEY`: 없으면 지니 보고서 생성과 Gemini 설명이 동작하지 않음
+
+## 로컬 실행 방법
+
+### 1. 가상환경 준비
+
+```powershell
+python -m venv venv
+venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### 3. 앱 실행
-```bash
-streamlit run music_app.py
+### 2. 배치 파일로 실행
+
+가장 간단한 실행 방법:
+
+```powershell
+.\LLMUSIC.bat
 ```
 
-## ✨ 주요 기능
+동작 방식:
 
-- **🎭 감정 기반 추천**: 10가지 감정 선택 (행복, 슬픔, 화남, 평온 등)
-- **📍 상황별 추천**: 자유 텍스트 입력 (카페에서 공부, 비오는날 등)
-- **🇰🇷 한국 노래 전용 모드**: 체크박스로 한국 음악만 추천 가능
-- **🤖 AI 추천 이유**: 무료 LLM을 통한 자연스러운 추천 설명
-- **🎵 다양한 소스**: Spotify + Last.fm + 지니차트 통합
-- **🔄 매번 다른 결과**: 동일 입력도 다양한 추천
+1. 현재 폴더로 이동
+2. `venv\Scripts\activate.bat`가 있으면 가상환경 활성화
+3. `python musicapp.py` 실행
+4. Flask 서버가 `http://127.0.0.1:5000`에서 열림
+5. 크롬이 있으면 브라우저 탭/창을 자동으로 엶
 
-## 🎯 사용법
+### 3. 직접 실행
 
-1. **감정 선택**: 드롭다운에서 현재 감정 선택
-2. **상황 입력**: "비오는날 듣기좋은 노래", "카페에서 공부" 등 자유롭게 입력
-3. **🇰🇷 한국 노래만**: 한국 음악만 원하면 체크박스 선택
-4. **추천받기**: 버튼 클릭으로 즉시 추천
-5. **결과 확인**: 추천곡과 AI 설명, 출처 확인
+```powershell
+venv\Scripts\activate
+python musicapp.py
+```
 
-## 🔍 추천 소스
+## 데이터 수집 자동화 방법
 
-- **🇰🇷 지니차트**: 실시간 한국 음악 트렌드
-- **🎵 Spotify (한국 아티스트)**: BTS, 아이유, 잔나비 등 한국 아티스트
-- **🌍 Spotify (글로벌)**: 전세계 음악
-- **🎯 Last.fm**: 태그 기반 음악 발견
+자동화 파이프라인은 `dags/airflow_genie.py` 기준으로 아래 순서로 실행됩니다.
 
-## 💡 팁
+1. `crawler_genie.py`
+2. `diff_genie.py`
+3. `jsontxt_genie.py`
 
-- **구체적 상황**: "비오는날", "운동할때", "집중하고 싶을때" 등 구체적일수록 정확한 추천
-- **한국 음악**: 🇰🇷 체크박스 사용으로 확실한 한국 음악만 추천
-- **다양한 시도**: 같은 입력도 매번 다른 추천으로 새로운 음악 발견
+생성 파일:
 
----
+- `data/genie_top100_YYYY-MM-DD.csv`: 지니 TOP100 원본 수집
+- `data/genie_diff_YYYY-MM-DD.csv`: 전일 대비 변화 분석
+- `data/genie_diff_brief_YYYY-MM-DD.json`: LLM용 요약 JSON
+- `data/genie_report_YYYY-MM-DD.txt`: Gemini 분석 리포트
 
-🎵 **완벽한 음악 추천을 경험해보세요!**
+스케줄:
+
+- DAG ID: `genie_chart_pipeline`
+- 타임존: `Asia/Seoul`
+- 크론: `0 17 * * *`
+- 의미: 매일 한국 시간 오후 5시에 실행
+
+### Airflow로 자동화 실행
+
+```powershell
+docker compose up airflow-init
+docker compose up -d
+```
+
+그 다음 Airflow UI 접속:
+
+- `http://localhost:8081`
+- 기본 계정: `airflow`
+- 기본 비밀번호: `airflow`
+
+UI에서 `genie_chart_pipeline` DAG를 켜면 스케줄에 따라 자동 실행됩니다.
+
+### 수동으로 한 번씩 실행
+
+크롤링:
+
+```powershell
+python dags\crawler_genie.py
+```
+
+변화 분석:
+
+```powershell
+python dags\diff_genie.py
+```
+
+LLM 리포트 생성:
+
+```powershell
+python dags\jsontxt_genie.py
+```
+
+주의:
+
+- `diff_genie.py`는 최소 2일치 `genie_top100_*.csv`가 있어야 동작합니다.
+- `jsontxt_genie.py`는 같은 날짜의 `genie_diff_brief_*.json`과 `GEMINI_API_KEY`가 필요합니다.
+
+## 실행 확인 포인트
+
+- 앱 실행 확인: 브라우저에서 `http://127.0.0.1:5000`
+- 상태 확인 API: `http://127.0.0.1:5000/api/status`
+- 추천 API: `POST /api/recommend`
+
+## 정리 메모
+
+중복 또는 실험 성격 파일은 삭제하지 않고 `delfile/`로 이동했습니다.
