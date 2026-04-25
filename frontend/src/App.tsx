@@ -6,16 +6,14 @@ import RecommendPage from "./pages/RecommendPage";
 import { fetchStatus } from "./services/api";
 
 const tabs = [
-  { key: "recommend", label: "추천", path: "/recommend" },
-  { key: "automation", label: "자동화", path: "/automation" },
+  { key: "recommend", label: "Music Match", path: "/recommend" },
+  { key: "automation", label: "Chart Ops", path: "/automation" },
 ] as const;
 
 type TabKey = (typeof tabs)[number]["key"];
 
 function pathToTab(pathname: string): TabKey {
-  if (pathname === "/automation") {
-    return "automation";
-  }
+  if (pathname === "/automation") return "automation";
   return "recommend";
 }
 
@@ -51,11 +49,7 @@ export default function App() {
       window.history.replaceState({}, "", "/recommend");
       setTab("recommend");
     }
-
-    const handlePopState = () => {
-      setTab(pathToTab(window.location.pathname));
-    };
-
+    const handlePopState = () => setTab(pathToTab(window.location.pathname));
     window.addEventListener("popstate", handlePopState);
     refreshStatus(true).catch(() => undefined);
     return () => window.removeEventListener("popstate", handlePopState);
@@ -64,48 +58,47 @@ export default function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sidebar-stack">
-          <p className="eyebrow">Service</p>
-          <h2>LLMUSIC</h2>
+        <div className="brand-block">
+          <p className="eyebrow">LLMUSIC</p>
+          <h1>Music intelligence for mood and charts</h1>
           <p className="sidebar-copy">
-            추천, 자동화, 차트 분석을 분리한 구조로 운영합니다.
+            추천은 공개 음악 API 중심으로, 자동화는 지니 크롤링과 리포트 생성 흐름으로 분리했습니다.
           </p>
-          <nav className="nav-list">
-            {tabs.map((item) => (
-              <button
-                key={item.key}
-                className={tab === item.key ? "nav-button active" : "nav-button"}
-                onClick={() => navigate(item.key)}
-              >
-                <span>{item.label}</span>
-                <small>{item.path}</small>
-              </button>
-            ))}
-          </nav>
         </div>
-        <div className="sidebar-stack">
-          <div className="section-heading">
-            <h3>API 상태</h3>
-            <button className="secondary-button small-button" onClick={() => refreshStatus(true)}>
-              새로고침
+
+        <nav className="nav-list">
+          {tabs.map((item) => (
+            <button
+              key={item.key}
+              className={tab === item.key ? "nav-button active" : "nav-button"}
+              onClick={() => navigate(item.key)}
+            >
+              <strong>{item.label}</strong>
+              <small>{item.path}</small>
             </button>
-          </div>
-          {status ? (
-            <StatusPanel
-              title="현재 연결"
-              compact
-              items={[
-                { label: "iTunes", value: status.itunes?.status ?? "-" },
-                { label: "MusicBrainz", value: status.musicbrainz?.status ?? "-" },
-                { label: "Last.fm", value: status.lastfm?.status ?? "-" },
-                { label: "OpenAI", value: status.openai?.status ?? "-", meta: status.openai?.model },
-                { label: "로컬 모델", value: status.local_models?.status ?? "-" },
-              ]}
-            />
-          ) : null}
+          ))}
+        </nav>
+
+        <StatusPanel
+          title="Live Integrations"
+          compact
+          items={[
+            { label: "iTunes", value: status?.itunes?.status ?? "-", meta: status?.itunes?.note },
+            { label: "MusicBrainz", value: status?.musicbrainz?.status ?? "-", meta: status?.musicbrainz?.note },
+            { label: "Last.fm", value: status?.lastfm?.status ?? "-" },
+            { label: "Genie", value: status?.genie?.status ?? "-", meta: status?.genie?.note },
+            { label: "OpenAI", value: status?.openai?.status ?? "-", meta: status?.openai?.model },
+          ]}
+        />
+
+        <div className="sidebar-actions">
+          <button className="secondary-button small-button" onClick={() => refreshStatus(true)}>
+            상태 새로고침
+          </button>
           {statusError ? <div className="sidebar-notice">{statusError}</div> : null}
         </div>
       </aside>
+
       <main className="content">
         {tab === "recommend" ? (
           <RecommendPage initialStatus={status} onStatusRefresh={() => refreshStatus(false)} />

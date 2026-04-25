@@ -26,9 +26,7 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
   }, [initialStatus]);
 
   useEffect(() => {
-    if (initialStatus) {
-      setStatus(initialStatus);
-    }
+    if (initialStatus) setStatus(initialStatus);
   }, [initialStatus]);
 
   async function handleSubmit(event: FormEvent) {
@@ -54,112 +52,129 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
 
   return (
     <div className="page-grid">
-      <section className="hero panel">
-        <p className="eyebrow">LLMUSIC</p>
-        <h1>감정 기반 음악 추천</h1>
-        <p className="lead">
-          OpenAI 우선, 로컬 모델 fallback, 지니 차트 백업까지 포함한 추천 흐름으로 재구성했습니다.
-        </p>
-      </section>
-
-      {status ? (
-        <StatusPanel
-          title="연결 상태"
-          items={[
-            { label: "iTunes Search", value: status.itunes.status, meta: status.itunes.note },
-            { label: "MusicBrainz", value: status.musicbrainz.status, meta: status.musicbrainz.note },
-            { label: "Last.fm", value: status.lastfm.status },
-            { label: "Spotify", value: status.spotify.status, meta: status.spotify.note },
-            {
-              label: "OpenAI",
-              value: status.openai.status,
-              meta: status.openai.live_error ?? status.openai.model,
-            },
-            {
-              label: "로컬 모델",
-              value: status.local_models.status,
-              meta: status.local_models.model_id,
-            },
-          ]}
-        />
-      ) : null}
-
-      <section className="panel">
-        <h2>추천 요청</h2>
-        <form className="recommend-form" onSubmit={handleSubmit}>
-          <div className="emotion-list">
-            {emotions.map((item) => (
-              <button
-                type="button"
-                key={item}
-                className={item === emotion ? "chip active" : "chip"}
-                onClick={() => setEmotion(item)}
-              >
-                {item}
-              </button>
-            ))}
+      <section className="hero hero-split">
+        <div>
+          <p className="eyebrow">Music Match</p>
+          <h2>감정과 상황을 기준으로, 실제 들을 수 있는 후보를 빠르게 추천합니다.</h2>
+          <p className="lead">
+            공개 음악 API 결과와 현재 `data/`에 존재하는 최신 지니 분석 결과를 함께 사용합니다. `data/`에 지니 분석 파일이 없으면
+            추천은 공개 API만으로 동작합니다.
+          </p>
+        </div>
+        <div className="hero-metrics">
+          <div className="metric-card">
+            <strong>공개 검색</strong>
+            <span>iTunes + MusicBrainz</span>
           </div>
-          <label className="field">
-            <span>상황</span>
-            <input
-              value={situation}
-              onChange={(event) => setSituation(event.target.value)}
-              placeholder="예: 비 오는 날 밤, 카페에서 공부"
-            />
-          </label>
-          <label className="toggle">
-            <input
-              type="checkbox"
-              checked={koreanOnly}
-              onChange={(event) => setKoreanOnly(event.target.checked)}
-            />
-            <span>한국 노래 중심으로 추천</span>
-          </label>
-          <button className="primary-button" type="submit" disabled={loading}>
-            {loading ? "추천 생성 중..." : "추천받기"}
-          </button>
-        </form>
+          <div className="metric-card">
+            <strong>선택 보강</strong>
+            <span>Last.fm + Genie</span>
+          </div>
+          <div className="metric-card">
+            <strong>설명 생성</strong>
+            <span>{status?.openai?.model ?? "OpenAI / Local"}</span>
+          </div>
+        </div>
       </section>
+
+      <div className="page-columns">
+        <section className="panel form-panel">
+          <div className="section-heading">
+            <h2>추천 조건</h2>
+            <span>{loading ? "추천 생성 중" : "입력 대기"}</span>
+          </div>
+          <form className="recommend-form" onSubmit={handleSubmit}>
+            <div className="emotion-list">
+              {emotions.map((item) => (
+                <button
+                  type="button"
+                  key={item}
+                  className={item === emotion ? "chip active" : "chip"}
+                  onClick={() => setEmotion(item)}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+
+            <label className="field">
+              <span>상황</span>
+              <input
+                value={situation}
+                onChange={(event) => setSituation(event.target.value)}
+                placeholder="예: 비 오는 밤, 퇴근길, 카페에서 공부, 주말 드라이브"
+              />
+            </label>
+
+            <label className="toggle">
+              <input
+                type="checkbox"
+                checked={koreanOnly}
+                onChange={(event) => setKoreanOnly(event.target.checked)}
+              />
+              <span>한국 노래 위주로 좁히기</span>
+            </label>
+
+            <button className="primary-button" type="submit" disabled={loading}>
+              {loading ? "추천 조합 생성 중..." : "추천받기"}
+            </button>
+          </form>
+        </section>
+
+        {status ? (
+          <StatusPanel
+            title="추천 소스 상태"
+            items={[
+              { label: "iTunes Search", value: status.itunes?.status ?? "-", meta: status.itunes?.note },
+              { label: "MusicBrainz", value: status.musicbrainz?.status ?? "-", meta: status.musicbrainz?.note },
+              { label: "Last.fm", value: status.lastfm?.status ?? "-" },
+              { label: "Genie 분석 데이터", value: status.genie?.status ?? "-", meta: status.genie?.note },
+              { label: "OpenAI", value: status.openai?.status ?? "-", meta: status.openai?.live_error ?? status.openai?.model },
+              { label: "로컬 모델", value: status.local_models?.status ?? "-", meta: status.local_models?.model_id },
+            ]}
+          />
+        ) : null}
+      </div>
 
       {error ? <section className="panel error-panel">{error}</section> : null}
 
       {result ? (
         <section className="panel">
           <div className="section-heading">
-            <h2>추천 결과</h2>
-            <span>{result.model_used}</span>
+            <div>
+              <h2>추천 결과</h2>
+              <p className="subtle-copy">설명 모델: {result.model_used}</p>
+            </div>
           </div>
-          <p className="explanation">{result.explanation}</p>
-          <div className="recommendation-grid">
-            {result.recommendations.map((item: any) => (
-              <article className="song-card" key={`${item.title}-${item.artist}`}>
+          <p className="explanation callout-text">{result.explanation}</p>
+
+          <div className="recommendation-list">
+            {result.recommendations.map((item: any, index: number) => (
+              <article className="result-row" key={`${item.title}-${item.artist}`}>
+                <div className="result-rank">{String(index + 1).padStart(2, "0")}</div>
                 {item.artwork_url ? (
-                  <img className="song-artwork" src={item.artwork_url} alt={`${item.title} artwork`} />
+                  <img className="result-artwork" src={item.artwork_url} alt={`${item.title} artwork`} />
                 ) : (
-                  <div className="song-artwork placeholder-artwork">
-                    <span>{item.source}</span>
-                  </div>
+                  <div className="result-artwork result-artwork-placeholder">{item.source}</div>
                 )}
-                <div className="song-copy">
+                <div className="result-copy">
                   <strong>{item.title}</strong>
                   <span>{item.artist}</span>
-                  <small>{item.album ?? item.source}</small>
-                  <small>{item.source}</small>
+                  <small>{item.album ?? "앨범 정보 없음"}</small>
                 </div>
-                <div className="song-actions">
+                <div className="result-meta">
+                  <span className="source-pill">{item.source}</span>
+                  {item.rank ? <small>지니 순위 {item.rank}</small> : <small>외부 검색 결과</small>}
+                </div>
+                <div className="result-actions">
                   {item.external_url ? (
                     <a className="secondary-button link-button" href={item.external_url} target="_blank" rel="noreferrer">
-                      외부 링크
+                      열기
                     </a>
                   ) : null}
                   {item.preview_url ? (
                     <a className="secondary-button link-button" href={item.preview_url} target="_blank" rel="noreferrer">
                       미리듣기
-                    </a>
-                  ) : null}
-                  {item.lastfm_url && !item.external_url ? (
-                    <a className="secondary-button link-button" href={item.lastfm_url} target="_blank" rel="noreferrer">
-                      Last.fm
                     </a>
                   ) : null}
                 </div>

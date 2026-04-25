@@ -23,8 +23,6 @@ class Settings:
     timezone: str = "Asia/Seoul"
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     openai_model: str = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
-    spotify_client_id: str = os.getenv("SPOTIFY_CLIENT_ID", "")
-    spotify_client_secret: str = os.getenv("SPOTIFY_CLIENT_SECRET", "")
     lastfm_api_key: str = os.getenv("LASTFM_API_KEY", "")
     local_llm_model_id: str = os.getenv(
         "LOCAL_LLM_MODEL_ID",

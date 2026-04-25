@@ -61,16 +61,7 @@ class RecommendationService:
         recommendations: list[dict] = []
         search_terms = self._emotion_keywords(emotion, situation)
         if korean_only:
-            search_terms = [
-                "아이유",
-                "BTS",
-                "NewJeans",
-                "IVE",
-                "AKMU",
-                "DAY6",
-                "태연",
-                "윤하",
-            ]
+            search_terms = ["아이유", "BTS", "NewJeans", "IVE", "AKMU", "DAY6", "태연", "윤하"]
         random.shuffle(search_terms)
 
         for term in search_terms[:3]:
@@ -82,11 +73,7 @@ class RecommendationService:
                 "country": "KR" if korean_only else "US",
             }
             try:
-                response = self.session.get(
-                    "https://itunes.apple.com/search",
-                    params=params,
-                    timeout=6,
-                )
+                response = self.session.get("https://itunes.apple.com/search", params=params, timeout=6)
                 response.raise_for_status()
                 data = response.json()
                 for track in data.get("results", [])[:4]:
@@ -117,8 +104,6 @@ class RecommendationService:
 
         for term in search_terms[:2]:
             query = f'recording:"{term}"'
-            if korean_only:
-                query += ' AND primarytype:album'
             try:
                 response = self.session.get(
                     "https://musicbrainz.org/ws/2/recording",
@@ -128,10 +113,10 @@ class RecommendationService:
                 response.raise_for_status()
                 data = response.json()
                 for recording in data.get("recordings", [])[:3]:
-                    artist_names = ", ".join(artist["name"] for artist in recording.get("artist-credit", []) if artist.get("name"))
-                    release_title = ""
-                    if recording.get("releases"):
-                        release_title = recording["releases"][0].get("title", "")
+                    artist_names = ", ".join(
+                        artist["name"] for artist in recording.get("artist-credit", []) if artist.get("name")
+                    )
+                    release_title = recording.get("releases", [{}])[0].get("title", "") if recording.get("releases") else ""
                     recommendations.append(
                         {
                             "title": recording.get("title"),
@@ -168,6 +153,7 @@ class RecommendationService:
                         {
                             "title": track.get("name"),
                             "artist": track.get("artist", {}).get("name", "Unknown"),
+                            "album": None,
                             "artwork_url": None,
                             "lastfm_url": track.get("url"),
                             "external_url": track.get("url"),
@@ -179,16 +165,13 @@ class RecommendationService:
         return recommendations
 
     def get_genie_backup(self, emotion: str) -> list[dict]:
-        candidates = list_artifacts(
-            [self.settings.data_dir, self.settings.archive_dir],
-            "genie_diff_brief_*.json",
-            "genie_diff_brief_",
-        )
+        candidates = list_artifacts([self.settings.data_dir], "genie_diff_brief_*.json", "genie_diff_brief_")
         if not candidates:
             return []
         latest_json = candidates[-1][1]
         with open(latest_json, "r", encoding="utf-8") as file:
             data = json.load(file)
+
         genre_mapping = {
             "행복": ["가요 / 댄스", "POP / 팝"],
             "슬픔": ["가요 / 발라드", "가요 / 인디"],
@@ -210,13 +193,14 @@ class RecommendationService:
                             "title": song["곡명"],
                             "artist": song["아티스트"],
                             "rank": song.get("오늘순위", song.get("순위", 0)),
+                            "album": None,
                             "artwork_url": None,
                             "external_url": None,
                             "source": "지니차트",
                         }
                     )
         random.shuffle(recommendations)
-        return recommendations[:4]
+        return recommendations[:3]
 
     def _dedupe(self, items: list[dict]) -> list[dict]:
         unique: list[dict] = []
@@ -235,43 +219,26 @@ class RecommendationService:
 
     def recommend(self, emotion: str, situation: str, korean_only: bool) -> tuple[list[RecommendationItem], str, str]:
         all_recommendations: list[dict] = []
-        all_recommendations.extend(self.get_genie_backup(emotion))
         all_recommendations.extend(self.search_itunes(emotion, situation, korean_only=korean_only))
         all_recommendations.extend(self.search_musicbrainz(emotion, situation, korean_only=korean_only))
         all_recommendations.extend(self.search_lastfm(emotion))
+        all_recommendations.extend(self.get_genie_backup(emotion))
         all_recommendations = self._dedupe(all_recommendations)
         random.shuffle(all_recommendations)
 
         songs_text = ", ".join(f"{item['title']} - {item['artist']}" for item in all_recommendations[:3]) or "추천 후보 없음"
         explanation, model_used = self.llm_service.generate(f"{emotion} 감정, {situation} 상황", songs_text)
-        items = [RecommendationItem(**item) for item in all_recommendations[:5]]
+        items = [RecommendationItem(**item) for item in all_recommendations[:6]]
         return items, explanation, model_used
 
     def source_status(self, probe_llm: bool = False) -> dict:
         llm_status = self.llm_service.status(probe=probe_llm)
+        genie_ready = bool(list_artifacts([self.settings.data_dir], "genie_diff_brief_*.json", "genie_diff_brief_"))
         return {
-            "itunes": {
-                "status": "연결됨",
-                "api_key_required": False,
-                "note": "공개 Search API",
-            },
-            "musicbrainz": {
-                "status": "연결됨",
-                "api_key_required": False,
-                "note": "공개 메타데이터 API",
-            },
-            "lastfm": {
-                "status": "연결됨" if self.settings.lastfm_api_key else "선택사항",
-                "api_key_configured": bool(self.settings.lastfm_api_key),
-            },
-            "spotify": {
-                "status": "비활성화",
-                "note": "정책 변경으로 기본 추천 소스에서 제외",
-            },
-            "llm": {
-                "status": llm_status["openai"]["status"],
-                "model_used": "없음",
-                "local_fallback_enabled": True,
-            },
+            "itunes": {"status": "연결됨", "api_key_required": False, "note": "공개 Search API"},
+            "musicbrainz": {"status": "연결됨", "api_key_required": False, "note": "공개 메타데이터 API"},
+            "lastfm": {"status": "연결됨" if self.settings.lastfm_api_key else "선택사항", "api_key_configured": bool(self.settings.lastfm_api_key)},
+            "genie": {"status": "준비됨" if genie_ready else "데이터 없음", "note": "현재 data 폴더 기준"},
+            "llm": {"status": llm_status["openai"]["status"], "model_used": "없음", "local_fallback_enabled": True},
             **llm_status,
         }

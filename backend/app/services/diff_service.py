@@ -329,21 +329,11 @@ def make_llm_brief(
     }
 
 
-def run_diff_analysis(
-    input_folder: str | Path,
-    output_folder: str | Path,
-    archive_folder: str | Path | None = None,
-) -> tuple[Path, Path]:
+def run_diff_analysis(input_folder: str | Path, output_folder: str | Path) -> tuple[Path, Path]:
     input_dir = Path(input_folder)
     output_dir = Path(output_folder)
-    archive_dir = Path(archive_folder) if archive_folder else None
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    search_dirs: list[Path] = [input_dir]
-    if archive_dir:
-        search_dirs.append(archive_dir)
-
-    (current_timestamp, today_path), (previous_timestamp, yday_path) = find_latest_two(*search_dirs)
+    (current_timestamp, today_path), (previous_timestamp, yday_path) = find_latest_two(input_dir)
     today = load_and_clean(today_path)
     yday = load_and_clean(yday_path)
     diff_df = build_diff(today, yday)
