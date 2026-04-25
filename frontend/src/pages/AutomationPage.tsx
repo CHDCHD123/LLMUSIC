@@ -1,5 +1,18 @@
 import { FormEvent, useEffect, useState } from "react";
 
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Grid,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { motion } from "framer-motion";
+import { Clock3, FileStack, Play, RefreshCw, ShieldCheck } from "lucide-react";
+
 import StatusPanel from "../components/StatusPanel";
 import { fetchAutomationStatus, runAutomation, updateSchedule } from "../services/api";
 
@@ -18,6 +31,8 @@ const stepLabels: Record<string, string> = {
   done: "완료",
   failed: "실패",
 };
+
+const MotionCard = motion.create(Card);
 
 export default function AutomationPage({ systemStatus, onStatusRefresh }: Props) {
   const [status, setStatus] = useState<any>(null);
@@ -74,137 +89,196 @@ export default function AutomationPage({ systemStatus, onStatusRefresh }: Props)
     }
   }
 
+  const metricCards = [
+    { icon: <Play size={18} />, label: "현재 단계", value: stepLabels[status?.current_step ?? "idle"] },
+    { icon: <ShieldCheck size={18} />, label: "비교 가능", value: status?.comparison_ready ? "준비됨" : "기준 대기" },
+    { icon: <Clock3 size={18} />, label: "다음 예약", value: status?.next_run_at ?? "미설정" },
+    { icon: <FileStack size={18} />, label: "마지막 결과", value: status?.last_result ?? "-" },
+  ];
+
   return (
-    <div className="page-grid">
-      <section className="hero-banner">
-        <div className="hero-copy">
-          <p className="eyebrow">Automation</p>
-          <h2>차트 수집, 비교, 리포트 생성 흐름을 한 번에 관리합니다.</h2>
-          <p className="lead">첫 실행은 기준 데이터만 저장하고, 두 번째부터 비교 분석을 시작합니다.</p>
-        </div>
-        <div className="hero-pill-row">
-          <span className="hero-pill">{stepLabels[status?.current_step ?? "idle"]}</span>
-          <span className="hero-pill">{status?.comparison_ready ? "비교 가능" : "비교 전"}</span>
-          <span className="hero-pill">{status?.schedule_enabled ? "예약 켜짐" : "예약 꺼짐"}</span>
-        </div>
-      </section>
+    <Stack spacing={3}>
+      <Card elevation={0} sx={{ borderRadius: 5, border: "1px solid", borderColor: "divider" }}>
+        <CardContent sx={{ p: { xs: 3, md: 4 } }}>
+          <Stack spacing={1.5}>
+            <Typography variant="overline" color="primary.light">
+              Automation
+            </Typography>
+            <Typography variant="h3">차트 수집과 리포트 생성을 운영 화면처럼 관리합니다.</Typography>
+            <Typography variant="body1" color="text.secondary">
+              첫 실행은 기준 저장, 두 번째부터 비교 분석.
+            </Typography>
+          </Stack>
+        </CardContent>
+      </Card>
 
-      <div className="page-columns">
-        <section className="panel">
-          <div className="section-heading">
-            <div>
-              <h2>컨트롤</h2>
-              <p className="subtle-copy">수동 실행과 예약 설정</p>
-            </div>
-          </div>
-          <div className="control-stack">
-            <button className="primary-button large-button" onClick={handleRunNow}>
-              지금 실행
-            </button>
-            <form className="schedule-form" onSubmit={handleScheduleSave}>
-              <label className="field">
-                <span>매일 실행 시각</span>
-                <input type="time" value={timeValue} onChange={(event) => setTimeValue(event.target.value)} />
-              </label>
-              <div className="button-row">
-                <button className="primary-button" type="submit">저장</button>
-                <button className="secondary-button" type="button" onClick={handleScheduleDisable}>끄기</button>
-              </div>
-            </form>
-          </div>
-        </section>
+      <Grid container spacing={3}>
+        {metricCards.map((item) => (
+          <Grid key={item.label} size={{ xs: 12, sm: 6, lg: 3 }}>
+            <Card elevation={0} sx={{ borderRadius: 4, border: "1px solid", borderColor: "divider" }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Stack spacing={1.2}>
+                  <Box sx={{ display: "flex", gap: 1, alignItems: "center", color: "primary.light" }}>
+                    {item.icon}
+                    <Typography variant="overline" color="text.secondary">
+                      {item.label}
+                    </Typography>
+                  </Box>
+                  <Typography variant="h6">{item.value}</Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
 
-        <section className="panel">
-          <div className="section-heading">
-            <div>
-              <h2>실행 상태</h2>
-              <p className="subtle-copy">{status?.progress_label ?? "대기 중"}</p>
-            </div>
-            <button className="secondary-button small-button" onClick={() => refresh()}>
-              새로고침
-            </button>
-          </div>
-          <div className="state-grid">
-            <div className="state-card">
-              <strong>현재 단계</strong>
-              <span>{stepLabels[status?.current_step ?? "idle"]}</span>
-              <small>{status?.running ? "실행 중" : "대기 중"}</small>
-            </div>
-            <div className="state-card">
-              <strong>마지막 결과</strong>
-              <span>{status?.last_result ?? "-"}</span>
-              <small>{status?.last_error ?? "에러 없음"}</small>
-            </div>
-            <div className="state-card">
-              <strong>다음 예약</strong>
-              <span>{status?.next_run_at ?? "미설정"}</span>
-              <small>{status?.schedule_time ?? "-"}</small>
-            </div>
-            <div className="state-card">
-              <strong>비교 상태</strong>
-              <span>{status?.comparison_ready ? "준비됨" : "기준 데이터 대기"}</span>
-              <small>{status?.last_started_at ?? "-"}</small>
-            </div>
-          </div>
-        </section>
-      </div>
+      <Grid container spacing={3}>
+        <Grid size={{ xs: 12, lg: 4 }}>
+          <Stack spacing={3}>
+            <Card elevation={0} sx={{ borderRadius: 5, border: "1px solid", borderColor: "divider" }}>
+              <CardContent sx={{ p: 3 }}>
+                <Stack spacing={2}>
+                  <Typography variant="h5">실행 제어</Typography>
+                  <Button variant="contained" size="large" startIcon={<Play size={18} />} onClick={handleRunNow}>
+                    지금 실행
+                  </Button>
+                  <Stack component="form" spacing={2} onSubmit={handleScheduleSave}>
+                    <TextField
+                      type="time"
+                      label="매일 실행 시각"
+                      value={timeValue}
+                      onChange={(event) => setTimeValue(event.target.value)}
+                      slotProps={{ inputLabel: { shrink: true } }}
+                    />
+                    <Stack direction="row" spacing={1.5}>
+                      <Button type="submit" variant="contained">
+                        저장
+                      </Button>
+                      <Button variant="outlined" color="inherit" onClick={handleScheduleDisable}>
+                        끄기
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Stack>
+              </CardContent>
+            </Card>
 
-      <div className="page-columns">
-        <section className="panel">
-          <div className="section-heading">
-            <div>
-              <h2>실행 로그</h2>
-              <p className="subtle-copy">최근 단계 기록</p>
-            </div>
-          </div>
-          <div className="log-list">
-            {(status?.activity_log ?? []).slice().reverse().map((entry: any, index: number) => (
-              <article className="log-row" key={`${entry.time}-${index}`}>
-                <div className="log-step">{stepLabels[entry.step] ?? entry.step}</div>
-                <div className="log-copy">
-                  <strong>{entry.message}</strong>
-                  <small>{entry.time}</small>
-                </div>
-              </article>
-            ))}
-            {!status?.activity_log?.length ? <div className="empty-copy empty-panel">로그가 아직 없습니다.</div> : null}
-          </div>
-        </section>
+            <StatusPanel
+              title="연결 상태"
+              items={[
+                { label: "Genie", value: systemStatus?.genie?.status ?? "-", meta: systemStatus?.genie?.note },
+                { label: "OpenAI", value: systemStatus?.openai?.status ?? "-", meta: systemStatus?.openai?.model },
+                { label: "로컬 모델", value: systemStatus?.local_models?.status ?? "-", meta: systemStatus?.local_models?.model_id },
+              ]}
+            />
+          </Stack>
+        </Grid>
 
-        <div className="stack-panel">
-          <StatusPanel
-            title="연결 상태"
-            items={[
-              { label: "Genie", value: systemStatus?.genie?.status ?? "-", meta: systemStatus?.genie?.note },
-              { label: "OpenAI", value: systemStatus?.openai?.status ?? "-", meta: systemStatus?.openai?.model },
-              { label: "로컬 모델", value: systemStatus?.local_models?.status ?? "-", meta: systemStatus?.local_models?.model_id },
-            ]}
-          />
+        <Grid size={{ xs: 12, lg: 8 }}>
+          <Stack spacing={3}>
+            <Card elevation={0} sx={{ borderRadius: 5, border: "1px solid", borderColor: "divider" }}>
+              <CardContent sx={{ p: 3 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="h5">실행 로그</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      최근 단계 기록
+                    </Typography>
+                  </Stack>
+                  <Button variant="outlined" color="inherit" size="small" startIcon={<RefreshCw size={16} />} onClick={() => refresh()}>
+                    새로고침
+                  </Button>
+                </Box>
 
-          <section className="panel">
-            <div className="section-heading">
-              <div>
-                <h2>최근 산출물</h2>
-                <p className="subtle-copy">마지막 실행 기준</p>
-              </div>
-            </div>
-            <div className="output-list">
-              {status?.last_outputs && Object.keys(status.last_outputs).length ? (
-                Object.entries(status.last_outputs).map(([key, value]) => (
-                  <article className="output-card" key={key}>
-                    <strong>{key}</strong>
-                    <small>{String(value)}</small>
-                  </article>
-                ))
-              ) : (
-                <div className="empty-copy empty-panel">산출물이 아직 없습니다.</div>
-              )}
-            </div>
-          </section>
-        </div>
-      </div>
+                <Stack spacing={1.5}>
+                  {(status?.activity_log ?? []).slice().reverse().map((entry: any, index: number) => (
+                    <MotionCard
+                      key={`${entry.time}-${index}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.03, duration: 0.18 }}
+                      elevation={0}
+                      sx={{ borderRadius: 4, border: "1px solid", borderColor: "divider" }}
+                    >
+                      <CardContent sx={{ p: 2 }}>
+                        <Grid container spacing={2} sx={{ alignItems: "center" }}>
+                          <Grid size={{ xs: 12, sm: 3 }}>
+                            <Typography variant="subtitle2" color="primary.light">
+                              {stepLabels[entry.step] ?? entry.step}
+                            </Typography>
+                          </Grid>
+                          <Grid size={{ xs: 12, sm: 9 }}>
+                            <Stack spacing={0.5}>
+                              <Typography variant="body1">{entry.message}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {entry.time}
+                              </Typography>
+                            </Stack>
+                          </Grid>
+                        </Grid>
+                      </CardContent>
+                    </MotionCard>
+                  ))}
+                  {!status?.activity_log?.length ? (
+                    <Card variant="outlined" sx={{ borderRadius: 4 }}>
+                      <CardContent sx={{ p: 4 }}>
+                        <Typography color="text.secondary">로그가 아직 없습니다.</Typography>
+                      </CardContent>
+                    </Card>
+                  ) : null}
+                </Stack>
+              </CardContent>
+            </Card>
 
-      {message ? <section className="panel notice-panel">{message}</section> : null}
-    </div>
+            <Card elevation={0} sx={{ borderRadius: 5, border: "1px solid", borderColor: "divider" }}>
+              <CardContent sx={{ p: 3 }}>
+                <Stack spacing={2}>
+                  <Stack spacing={0.5}>
+                    <Typography variant="h5">최근 산출물</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      마지막 실행 기준
+                    </Typography>
+                  </Stack>
+                  <Grid container spacing={1.5}>
+                    {status?.last_outputs && Object.keys(status.last_outputs).length ? (
+                      Object.entries(status.last_outputs).map(([key, value]) => (
+                        <Grid key={key} size={{ xs: 12, md: 6 }}>
+                          <Card variant="outlined" sx={{ borderRadius: 4 }}>
+                            <CardContent sx={{ p: 2 }}>
+                              <Stack spacing={1}>
+                                <Typography variant="overline" color="text.secondary">
+                                  {key}
+                                </Typography>
+                                <Typography variant="body2">{String(value)}</Typography>
+                              </Stack>
+                            </CardContent>
+                          </Card>
+                        </Grid>
+                      ))
+                    ) : (
+                      <Grid size={12}>
+                        <Card variant="outlined" sx={{ borderRadius: 4 }}>
+                          <CardContent sx={{ p: 4 }}>
+                            <Typography color="text.secondary">산출물이 아직 없습니다.</Typography>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    )}
+                  </Grid>
+                </Stack>
+              </CardContent>
+            </Card>
+          </Stack>
+        </Grid>
+      </Grid>
+
+      {message ? (
+        <Card elevation={0} sx={{ borderRadius: 4, border: "1px solid", borderColor: "primary.main", backgroundColor: "rgba(255,122,69,0.08)" }}>
+          <CardContent>
+            <Typography>{message}</Typography>
+          </CardContent>
+        </Card>
+      ) : null}
+    </Stack>
   );
 }
