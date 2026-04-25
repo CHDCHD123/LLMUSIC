@@ -5,6 +5,7 @@ export type RecommendPayload = {
   situation: string;
   korean_only: boolean;
   variation?: number;
+  engine_mode?: "auto" | "openai" | "local" | "template";
 };
 
 const jsonHeaders = {

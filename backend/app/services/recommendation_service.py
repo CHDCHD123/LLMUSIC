@@ -311,7 +311,14 @@ class RecommendationService:
             unique.append(item)
         return unique
 
-    def recommend(self, emotion: str, situation: str, korean_only: bool, variation: int = 0) -> tuple[list[RecommendationItem], str, str]:
+    def recommend(
+        self,
+        emotion: str,
+        situation: str,
+        korean_only: bool,
+        variation: int = 0,
+        engine_mode: str = "auto",
+    ) -> tuple[list[RecommendationItem], str, str]:
         emotion = emotion.strip()
         situation = situation.strip()
         all_recommendations: list[dict] = []
@@ -338,7 +345,7 @@ class RecommendationService:
         if situation:
             context_parts.append(f"{situation} 상황")
         context_text = ", ".join(context_parts) or "일반 청취 상황"
-        explanation, model_used = self.llm_service.generate(context_text, songs_text)
+        explanation, model_used = self.llm_service.generate(context_text, songs_text, engine_mode=engine_mode)
         items = [RecommendationItem(**item) for item in top_candidates]
         return items, explanation, model_used
 

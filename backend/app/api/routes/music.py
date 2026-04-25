@@ -16,7 +16,7 @@ def recommend(request: Request, payload: RecommendRequest) -> RecommendResponse:
     recommendation_service = request.app.state.recommendation_service
     try:
         recommendations, explanation, model_used = recommendation_service.recommend(
-            payload.emotion, payload.situation, payload.korean_only, payload.variation
+            payload.emotion, payload.situation, payload.korean_only, payload.variation, payload.engine_mode
         )
         return RecommendResponse(
             recommendations=recommendations,

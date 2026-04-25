@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from pydantic import BaseModel, Field
+from typing import Literal
 
 
 class RecommendRequest(BaseModel):
@@ -10,6 +11,7 @@ class RecommendRequest(BaseModel):
     situation: str = ""
     korean_only: bool = False
     variation: int = 0
+    engine_mode: Literal["auto", "openai", "local", "template"] = "auto"
 
 
 class RecommendationItem(BaseModel):

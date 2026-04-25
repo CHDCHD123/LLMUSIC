@@ -19,6 +19,8 @@ type Props = {
   onStatusRefresh?: () => void;
 };
 
+type EngineMode = "auto" | "openai" | "local" | "template";
+
 const STORAGE_KEY = "llmusic-recommend-state";
 
 function loadStoredState() {
@@ -35,6 +37,7 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
   const [selectedSituation, setSelectedSituation] = useState(stored?.selectedSituation ?? "");
   const [customSituation, setCustomSituation] = useState(stored?.customSituation ?? "");
   const [koreanOnly, setKoreanOnly] = useState(stored?.koreanOnly ?? true);
+  const [engineMode, setEngineMode] = useState<EngineMode>(stored?.engineMode ?? "auto");
   const [variation, setVariation] = useState(0);
   const [status, setStatus] = useState<any>(initialStatus ?? null);
   const [loading, setLoading] = useState(false);
@@ -63,9 +66,10 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
         selectedSituation,
         customSituation,
         koreanOnly,
+        engineMode,
       })
     );
-  }, [emotion, selectedSituation, customSituation, koreanOnly]);
+  }, [emotion, selectedSituation, customSituation, koreanOnly, engineMode]);
 
   async function handleRecommend(nextVariation = variation) {
     if (!emotion && !selectedSituation && !customSituation.trim()) {
@@ -80,6 +84,7 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
         situation,
         korean_only: koreanOnly,
         variation: nextVariation,
+        engine_mode: engineMode,
       });
       setResult(response);
       setVariation(nextVariation);
@@ -102,10 +107,20 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
   const openaiModel = status?.openai?.model ?? "OpenAI 미설정";
   const localModel = status?.local_models?.model_id ?? "로컬 모델 미설정";
   const activeModel = result?.model_used ?? openaiModel;
+  const displayMode = engineMode.toUpperCase();
+  const selectedEngineLabel =
+    engineMode === "auto"
+      ? "자동 선택"
+      : engineMode === "openai"
+        ? "OpenAI 우선"
+        : engineMode === "local"
+          ? "EXAONE 우선"
+          : "Template 고정";
+  const actualModelLabel = result?.model_used ?? "추천 실행 후 표시";
   const failoverSteps = [
-    { order: "01", title: "Primary", value: openaiModel, active: activeModel === openaiModel },
-    { order: "02", title: "Fallback", value: localModel, active: activeModel === localModel },
-    { order: "03", title: "Template", value: "template-fallback", active: activeModel === "template-fallback" },
+    { order: "01", title: "OpenAI", value: openaiModel, key: "openai" as EngineMode, active: activeModel === openaiModel },
+    { order: "02", title: "EXAONE", value: localModel, key: "local" as EngineMode, active: activeModel === `local:${localModel}` || activeModel === localModel },
+    { order: "03", title: "Template", value: "template-fallback", key: "template" as EngineMode, active: activeModel === "template-fallback" },
   ];
 
   return (
@@ -126,14 +141,36 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
             <div className="mb-3 text-[11px] uppercase tracking-[0.18em] text-[#e9c176]" style={{ fontFamily: "Manrope, sans-serif" }}>
               Failover Chain
             </div>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setEngineMode("auto")}
+                className={`rounded-full border px-3 py-1.5 text-[11px] uppercase tracking-[0.18em] transition-all ${
+                  engineMode === "auto"
+                    ? "border-[#e9c176]/40 bg-[#604403]/25 text-[#f3d7a0]"
+                    : "border-white/10 bg-white/[0.03] text-slate-400 hover:text-white"
+                }`}
+                style={{ fontFamily: "Manrope, sans-serif" }}
+              >
+                Auto
+              </button>
+              <span className="text-[11px] uppercase tracking-[0.15em] text-slate-500" style={{ fontFamily: "Manrope, sans-serif" }}>
+                Mode: {displayMode}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-[11px] uppercase tracking-[0.15em] text-white/70" style={{ fontFamily: "Manrope, sans-serif" }}>
+                Selected: {selectedEngineLabel}
+              </span>
+            </div>
             <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
               {failoverSteps.map((step) => (
-                <div
+                <button
                   key={step.order}
-                  className={`rounded-lg border px-3 py-3 transition-all ${
-                    step.active
+                  type="button"
+                  onClick={() => setEngineMode(step.key)}
+                  className={`rounded-lg border px-3 py-3 text-left transition-all ${
+                    engineMode === step.key || (engineMode === "auto" && step.active)
                       ? "border-[#e9c176]/40 bg-[#604403]/25 shadow-[0_0_18px_rgba(233,193,118,0.12)]"
-                      : "border-white/10 bg-white/[0.03]"
+                      : "border-white/10 bg-white/[0.03] hover:border-[#e9c176]/20 hover:bg-white/[0.05]"
                   }`}
                 >
                   <div className="mb-2 flex items-center justify-between gap-3">
@@ -141,16 +178,25 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
                       {step.order}
                     </span>
                     <span
-                      className={`h-2.5 w-2.5 rounded-full ${step.active ? "bg-[#e9c176] shadow-[0_0_10px_rgba(233,193,118,0.8)]" : "bg-white/20"}`}
+                      className={`h-2.5 w-2.5 rounded-full ${
+                        engineMode === step.key || (engineMode === "auto" && step.active)
+                          ? "bg-[#e9c176] shadow-[0_0_10px_rgba(233,193,118,0.8)]"
+                          : "bg-white/20"
+                      }`}
                     />
                   </div>
                   <div className="mb-1 text-[11px] uppercase tracking-[0.15em] text-slate-400" style={{ fontFamily: "Manrope, sans-serif" }}>
                     {step.title}
                   </div>
-                  <div className={`break-words text-sm leading-5 ${step.active ? "text-[#f3d7a0]" : "text-on-surface-variant"}`} style={{ fontFamily: "Manrope, sans-serif" }}>
+                  <div
+                    className={`break-words text-sm leading-5 ${
+                      engineMode === step.key || (engineMode === "auto" && step.active) ? "text-[#f3d7a0]" : "text-on-surface-variant"
+                    }`}
+                    style={{ fontFamily: "Manrope, sans-serif" }}
+                  >
                     {step.value}
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -286,8 +332,13 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
               {result?.explanation ?? "추천을 실행하면 감정, 상황, 곡 메타데이터, 차트 흐름을 함께 반영한 설명이 여기 표시됩니다."}
             </p>
           </div>
-          <div className="max-w-full rounded-lg border border-[#e9c176]/20 bg-[rgba(18,20,20,0.4)] px-md py-sm break-words whitespace-normal leading-5 text-[#e9c176] md:max-w-[360px]" style={{ fontFamily: "Manrope, sans-serif" }}>
-            모델: {activeModel}
+          <div className="grid w-full gap-2 md:w-auto md:min-w-[360px]">
+            <div className="max-w-full rounded-lg border border-white/10 bg-[rgba(18,20,20,0.35)] px-md py-sm break-words whitespace-normal leading-5 text-white/75" style={{ fontFamily: "Manrope, sans-serif" }}>
+              선택 엔진: {selectedEngineLabel}
+            </div>
+            <div className="max-w-full rounded-lg border border-[#e9c176]/20 bg-[rgba(18,20,20,0.4)] px-md py-sm break-words whitespace-normal leading-5 text-[#e9c176]" style={{ fontFamily: "Manrope, sans-serif" }}>
+              실제 사용: {actualModelLabel}
+            </div>
           </div>
         </div>
 

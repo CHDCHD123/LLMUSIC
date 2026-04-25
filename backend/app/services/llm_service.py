@@ -69,13 +69,26 @@ class LLMService:
             },
         }
 
-    def generate(self, user_input: str, songs_text: str) -> tuple[str, str]:
-        text = self._generate_openai(user_input, songs_text)
-        if text:
-            return text, self.settings.openai_model
-        text = self._generate_local(user_input, songs_text)
-        if text:
-            return text, f"local:{self.settings.local_llm_model_id}"
+    def generate(self, user_input: str, songs_text: str, engine_mode: str = "auto") -> tuple[str, str]:
+        chains = {
+            "auto": ["openai", "local", "template"],
+            "openai": ["openai", "local", "template"],
+            "local": ["local", "template"],
+            "template": ["template"],
+        }
+
+        for engine in chains.get(engine_mode, chains["auto"]):
+            if engine == "openai":
+                text = self._generate_openai(user_input, songs_text)
+                if text:
+                    return text, self.settings.openai_model
+            elif engine == "local":
+                text = self._generate_local(user_input, songs_text)
+                if text:
+                    return text, f"local:{self.settings.local_llm_model_id}"
+            else:
+                return self._generate_template(user_input, songs_text), "template-fallback"
+
         return self._generate_template(user_input, songs_text), "template-fallback"
 
     def _generate_openai(self, user_input: str, songs_text: str) -> Optional[str]:
