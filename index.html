@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link href="https://fonts.googleapis.com/css?family=Inter&display=swap" rel="stylesheet" />
+    <link href="./css/main.css" rel="stylesheet" />
+    <script src="./js/main.js" defer></script>
+    <title>LLMUSIC 감정 기반 음악 추천</title>
+  </head>
+  <body>
+    <div class="v1_3">
+      <div class="v1_5">
+        <div class="top-header-bar">
+          <div class="v1_20">
+            <div class="v1_17">
+              <div class="v1_21">
+                <span class="v1_19">LLMUSIC</span>
+              </div>
+            </div>
+          </div>
+          <div class="v1_30" id="connection-status-container">
+            <div class="status-chip-wrapper" id="spotify-status">
+              <div class="section-card status-chip">
+                <div class="status-dot status-off"></div>
+                <div><p><strong>Spotify</strong><br><span class="status-text">미연결</span></p></div>
+              </div>
+            </div>
+            <div class="status-chip-wrapper" id="lastfm-status">
+              <div class="section-card status-chip">
+                <div class="status-dot status-warn"></div>
+                <div><p><strong>Last.fm</strong><br><span class="status-text">미연결</span></p></div>
+              </div>
+            </div>
+            <div class="status-chip-wrapper" id="llm-status">
+              <div class="section-card status-chip">
+                <div class="status-dot status-warn"></div>
+                <div><p><strong>LLM</strong><br><span class="status-text">미연결</span></p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="v1_33" id="main-content-container">
+          <h1 class="main-title">🎵 감정 기반 음악 추천</h1>
+          <p class="main-description">감정과 상황을 입력하면 맞춤 음악을 추천해드려요!</p>
+
+          <div id="input-section">
+            <h2 class="section-title">감정을 선택하세요</h2>
+            <div id="emotion-buttons-container" class="emotion-grid">
+              <!-- Emotion buttons will be dynamically inserted here by JavaScript -->
+            </div>
+            <p class="current-selection">
+              현재 선택: <strong id="selected-emotion-display">행복</strong>
+              <span class="badge">감정</span>
+            </p>
+            <hr class="divider">
+
+            <form id="music-recommendation-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="situation-input">상황을 입력하세요:</label>
+                  <input type="text" id="situation-input" placeholder="예: 카페에서 공부, 헬스장에서 운동..." />
+                </div>
+                <div class="checkbox-group">
+                  <input type="checkbox" id="korean-only-checkbox" />
+                  <label for="korean-only-checkbox">🇰🇷 한국 노래만 추천받기</label>
+                </div>
+              </div>
+              <button type="submit" id="recommend-button">🎵 추천받기</button>
+            </form>
+          </div>
+
+          <div id="result-section" style="display: none;">
+            <h2 class="section-title">✨ 추천 결과</h2>
+            <div id="recommendation-results">
+              <!-- Recommendation results will be displayed here by JavaScript -->
+            </div>
+          </div>
+        </div>
+        <footer class="main-footer">
+            <p>&copy; 2025 LLMUSIC. Made by 조현도, 김윤환</p>
+            <p>Features: Emotion-based Music Recommendation, Multi-LLM Support, partial reference to Genie charts</p>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>
+<script>
+  // 페이지 탭이 닫히거나 이동/새로고침될 때 서버에 종료 신호
+  window.addEventListener('unload', function () {
+    try {
+      navigator.sendBeacon('/__shutdown__', new Blob([], { type: 'text/plain' }));
+    } catch (e) {
+      fetch('/__shutdown__', { method: 'POST', keepalive: true }).catch(()=>{});
+    }
+  });
+</script>

@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.env
+.cache
+logs/
+plugins/
+dags/__pycache__/
+delfile/
