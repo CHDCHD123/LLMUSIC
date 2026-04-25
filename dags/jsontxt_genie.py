@@ -99,11 +99,12 @@ def _generate_with_gemini(question: str, brief_text: str) -> str:
     api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY 또는 GOOGLE_API_KEY 환경변수가 없습니다.")
+    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
     import google.generativeai as genai
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model = genai.GenerativeModel(model_name)
     response = model.generate_content([question, brief_text])
     text = getattr(response, "text", "") or ""
     if not text.strip():
