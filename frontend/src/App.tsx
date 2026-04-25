@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 
-import StatusPanel from "./components/StatusPanel";
 import AutomationPage from "./pages/AutomationPage";
 import RecommendPage from "./pages/RecommendPage";
 import { fetchStatus } from "./services/api";
 
 const tabs = [
-  { key: "recommend", label: "Music Match", path: "/recommend" },
-  { key: "automation", label: "Chart Ops", path: "/automation" },
+  { key: "recommend", label: "추천", path: "/recommend" },
+  { key: "automation", label: "자동화", path: "/automation" },
 ] as const;
 
 type TabKey = (typeof tabs)[number]["key"];
@@ -57,55 +56,48 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand-block">
+      <header className="topbar">
+        <div className="topbar-brand">
           <p className="eyebrow">LLMUSIC</p>
-          <h1>Music intelligence for mood and charts</h1>
-          <p className="sidebar-copy">
-            추천은 공개 음악 API 중심으로, 자동화는 지니 크롤링과 리포트 생성 흐름으로 분리했습니다.
-          </p>
+          <h1>Music concierge with live chart ops</h1>
         </div>
 
-        <nav className="nav-list">
+        <nav className="topbar-nav">
           {tabs.map((item) => (
             <button
               key={item.key}
-              className={tab === item.key ? "nav-button active" : "nav-button"}
+              className={tab === item.key ? "tab-button active" : "tab-button"}
               onClick={() => navigate(item.key)}
             >
-              <strong>{item.label}</strong>
-              <small>{item.path}</small>
+              {item.label}
             </button>
           ))}
         </nav>
 
-        <StatusPanel
-          title="Live Integrations"
-          compact
-          items={[
-            { label: "iTunes", value: status?.itunes?.status ?? "-", meta: status?.itunes?.note },
-            { label: "MusicBrainz", value: status?.musicbrainz?.status ?? "-", meta: status?.musicbrainz?.note },
-            { label: "Last.fm", value: status?.lastfm?.status ?? "-" },
-            { label: "Genie", value: status?.genie?.status ?? "-", meta: status?.genie?.note },
-            { label: "OpenAI", value: status?.openai?.status ?? "-", meta: status?.openai?.model },
-          ]}
-        />
-
-        <div className="sidebar-actions">
+        <div className="topbar-actions">
+          <div className="status-strip">
+            <span className="status-dot">{status?.itunes?.status ?? "-"}</span>
+            <span className="status-dot">{status?.musicbrainz?.status ?? "-"}</span>
+            <span className="status-dot">{status?.openai?.status ?? "-"}</span>
+          </div>
           <button className="secondary-button small-button" onClick={() => refreshStatus(true)}>
             상태 새로고침
           </button>
-          {statusError ? <div className="sidebar-notice">{statusError}</div> : null}
         </div>
-      </aside>
+      </header>
 
-      <main className="content">
+      <main className="main-shell">
         {tab === "recommend" ? (
           <RecommendPage initialStatus={status} onStatusRefresh={() => refreshStatus(false)} />
         ) : (
           <AutomationPage systemStatus={status} onStatusRefresh={() => refreshStatus(false)} />
         )}
       </main>
+
+      <footer className="footer-bar">
+        <span>LLMUSIC</span>
+        <span>{statusError || "Mood recommendation + Genie automation"}</span>
+      </footer>
     </div>
   );
 }
