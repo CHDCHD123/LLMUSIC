@@ -18,44 +18,48 @@ from flask_cors import CORS
 
 # LLM용 import
 TRANSFORMERS_AVAILABLE = False
-GENAI_AVAILABLE = False
+OPENAI_AVAILABLE = False
 
 try:
-    from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
+    from transformers import AutoTokenizer, AutoModelForCausalLM
     TRANSFORMERS_AVAILABLE = True
     print("Transformers 라이브러리 로드 성공")
 except ImportError as e:
     print(f"Transformers 라이브러리 로드 실패: {e}")
 
 try:
-    import google.generativeai as genai
-    GENAI_AVAILABLE = True
-    print("Google Generative AI 라이브러리 로드 성공")
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+    print("OpenAI 라이브러리 로드 성공")
 except ImportError as e:
-    print(f"Google Generative AI 라이브러리 로드 실패: {e}")
+    print(f"OpenAI 라이브러리 로드 실패: {e}")
 
 # 환경변수 로드
 load_dotenv()
 
-LOCAL_LLM_FALLBACK_ENABLED = False
-DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+LOCAL_LLM_FALLBACK_ENABLED = True
+DEFAULT_OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+LOCAL_MODEL_ID = os.getenv("LOCAL_LLM_MODEL_ID", "LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct")
+LOCAL_MODEL_DIR = Path(os.getenv("LOCAL_LLM_MODEL_DIR", str(Path.cwd() / "model" / "EXAONE-3.5-2.4B-Instruct")))
 HF_CACHE_DIR = Path.home() / ".cache" / "huggingface" / "hub"
 
 
-def probe_gemini_connection() -> Dict[str, Optional[str]]:
-    if not (os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')):
-        return {"ok": False, "error": "GEMINI_API_KEY 또는 GOOGLE_API_KEY가 없습니다."}
-    if not GENAI_AVAILABLE:
-        return {"ok": False, "error": "google-generativeai 패키지가 설치되지 않았습니다."}
+def probe_openai_connection() -> Dict[str, Optional[str]]:
+    if not os.getenv("OPENAI_API_KEY"):
+        return {"ok": False, "error": "OPENAI_API_KEY가 없습니다."}
+    if not OPENAI_AVAILABLE:
+        return {"ok": False, "error": "openai 패키지가 설치되지 않았습니다."}
     try:
-        api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(DEFAULT_GEMINI_MODEL)
-        response = model.generate_content("ping")
-        text = getattr(response, "text", "") or ""
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = client.chat.completions.create(
+            model=DEFAULT_OPENAI_MODEL,
+            messages=[{"role": "user", "content": "ping"}],
+            max_tokens=8,
+        )
+        text = response.choices[0].message.content or ""
         if text.strip():
             return {"ok": True, "error": None}
-        return {"ok": False, "error": "Gemini 응답 텍스트가 비어 있습니다."}
+        return {"ok": False, "error": "OpenAI 응답 텍스트가 비어 있습니다."}
     except Exception as e:
         return {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
@@ -100,8 +104,8 @@ class MusicRecommender:
         self.spotify = None
         self.lastfm_key = os.getenv('LASTFM_API_KEY')
         self.init_spotify()
-        self._tf_generator = None
-        self._local_generator = None
+        self._local_tokenizer = None
+        self._local_model = None
         self.last_model_used = "없음"  # 마지막 사용 LLM 모델 기록
 
     def init_spotify(self):
@@ -295,68 +299,85 @@ class MusicRecommender:
         return explanation_text, model_used
 
     def ask_llm(self, user_input: str, songs: str) -> Tuple[str, str]:
-        self.last_model_used = "Gemini (시도 중)"
-        result = self.try_gemini_with_key(user_input, songs)
+        self.last_model_used = f"OpenAI ({DEFAULT_OPENAI_MODEL}) (시도 중)"
+        result = self.try_openai_with_key(user_input, songs)
         if result:
-            return result, DEFAULT_GEMINI_MODEL
+            return result, DEFAULT_OPENAI_MODEL
+
+        self.last_model_used = f"Local ({LOCAL_MODEL_ID}) (시도 중)"
+        result = self.try_local_model(user_input, songs)
+        if result:
+            return result, f"local:{LOCAL_MODEL_ID}"
 
         self.last_model_used = "없음"
-        if not (os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')):
-            return "Gemini API 키가 설정되지 않았습니다.", "없음"
-        if not GENAI_AVAILABLE:
-            return "google-generativeai 패키지가 설치되지 않아 Gemini를 호출할 수 없습니다.", "없음"
-        if not LOCAL_LLM_FALLBACK_ENABLED:
-            return "Gemini 호출에 실패했고 로컬 LLM fallback은 비활성화되어 있습니다.", "없음"
-        return "LLM 연결에 실패했습니다. API 설정을 확인해주세요.", "없음"
+        return self.build_template_explanation(user_input, songs), "template-fallback"
 
-    def try_gemini_with_key(self, user_input: str, songs: str) -> Optional[str]:
+    def try_openai_with_key(self, user_input: str, songs: str) -> Optional[str]:
         try:
-            if not GENAI_AVAILABLE:
+            if not OPENAI_AVAILABLE:
                 return None
-            api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
+            api_key = os.getenv('OPENAI_API_KEY')
             if not api_key:
                 return None
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel(DEFAULT_GEMINI_MODEL)
-            prompt = f"""
-            사용자 상황: {user_input}
-            추천된 음악: {songs}
-            위 상황에서 이 음악들을 추천하는 이유를 2-3문장으로 자연스럽게 한국어로 설명해주세요.
-            """
-            response = model.generate_content(prompt)
-            if hasattr(response, "text") and response.text:
-                return response.text.strip()
-            return None
+            client = OpenAI(api_key=api_key)
+            response = client.chat.completions.create(
+                model=DEFAULT_OPENAI_MODEL,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "당신은 음악 큐레이터입니다. 사용자의 감정과 상황에 맞춰 추천 곡이 왜 어울리는지 "
+                            "한국어로 2문장 이내로 간결하게 설명하세요."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": (
+                            f"사용자 상황: {user_input}\n"
+                            f"추천된 음악: {songs}\n"
+                            "위 상황에서 이 음악들을 추천하는 이유를 자연스럽게 설명해주세요."
+                        ),
+                    },
+                ],
+                temperature=0.7,
+                max_tokens=120,
+            )
+            text = response.choices[0].message.content or ""
+            return text.strip() if text.strip() else None
         except Exception as e:
-            print(f"Gemini API 오류: {e}")
+            print(f"OpenAI API 오류: {e}")
             return None
 
-    def try_transformers_pipeline(self, user_input: str, songs: str) -> Optional[str]:
+    def try_local_model(self, user_input: str, songs: str) -> Optional[str]:
         import torch
         try:
+            if not LOCAL_LLM_FALLBACK_ENABLED:
+                return None
             if not TRANSFORMERS_AVAILABLE:
                 print("Transformers 라이브러리 사용 불가.")
                 return None
+            if not LOCAL_MODEL_DIR.exists():
+                print(f"로컬 모델 폴더 없음: {LOCAL_MODEL_DIR}")
+                return None
             songs_short = ", ".join(songs.split(", ")[:3])
-            if getattr(self, "_tf_model", None) is None:
-                print("Qwen 모델 로드 시도...")
-                model_id = "Qwen/Qwen2.5-1.5B-Instruct"
-                tok = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+            if self._local_model is None:
+                print(f"로컬 모델 로드 시도: {LOCAL_MODEL_DIR}")
+                tok = AutoTokenizer.from_pretrained(str(LOCAL_MODEL_DIR), trust_remote_code=True)
+                model_kwargs = {"trust_remote_code": True}
+                if torch.cuda.is_available():
+                    model_kwargs["torch_dtype"] = torch.bfloat16
                 mdl = AutoModelForCausalLM.from_pretrained(
-                    model_id, trust_remote_code=True,
-                    torch_dtype=torch.float16 if torch.cuda.is_available() else None
+                    str(LOCAL_MODEL_DIR),
+                    **model_kwargs,
                 )
                 if torch.cuda.is_available():
                     mdl = mdl.to("cuda:0")
-                    print("Qwen 모델 CUDA(GPU) 사용 가능.")
+                    print("로컬 모델 CUDA(GPU) 사용 가능.")
                 else:
-                    print("Qwen 모델 CPU 사용. (CUDA 사용 불가)")
-                self._tf_tokenizer = tok
-                self._tf_model = mdl
-                print("Qwen 모델 로드 완료.")
-
-            tok = self._tf_tokenizer
-            mdl = self._tf_model
+                    print("로컬 모델 CPU 사용. (CUDA 사용 불가)")
+                self._local_tokenizer = tok
+                self._local_model = mdl
+                print("로컬 모델 로드 완료.")
 
             system_prompt = (
                 "당신은 음악 큐레이터입니다. 사용자의 감정과 상황을 읽고, "
@@ -375,18 +396,19 @@ class MusicRecommender:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ]
-            print("Qwen 모델 텍스트 생성 시도...")
-            inputs = tok.apply_chat_template(
+            print("로컬 모델 텍스트 생성 시도...")
+            tok = self._local_tokenizer
+            mdl = self._local_model
+            text = tok.apply_chat_template(
                 messages,
-                add_generation_prompt=True,
-                tokenize=True,
-                return_tensors="pt"
+                tokenize=False,
+                add_generation_prompt=True
             )
+            model_inputs = tok([text], return_tensors="pt")
             if mdl.device.type == "cuda":
-                inputs = inputs.to(mdl.device)
-
+                model_inputs = {k: v.to(mdl.device) for k, v in model_inputs.items()}
             out = mdl.generate(
-                inputs,
+                **model_inputs,
                 max_new_tokens=120,
                 temperature=0.6,
                 top_p=0.9,
@@ -396,7 +418,11 @@ class MusicRecommender:
                 eos_token_id=tok.eos_token_id,
                 pad_token_id=tok.pad_token_id if tok.pad_token_id is not None else tok.eos_token_id,
             )
-            gen = tok.decode(out[0][inputs.shape[-1]:], skip_special_tokens=True).strip()
+            generated_ids = [
+                output_ids[len(input_ids):]
+                for input_ids, output_ids in zip(model_inputs["input_ids"], out)
+            ]
+            gen = tok.batch_decode(generated_ids, skip_special_tokens=True)[0].strip()
 
             import re
             gen_fixed = re.sub(r'([.!?]|다\.)', r'\g<1>\n', gen)
@@ -405,51 +431,14 @@ class MusicRecommender:
             return gen if len(gen) > 5 else None
 
         except Exception as e:
-            print(f"Transformers(Qwen chat) 오류: {type(e).__name__} - {e}")
+            print(f"Transformers(Local model) 오류: {type(e).__name__} - {e}")
             return None
 
-    def try_huggingface_inference(self, user_input: str, songs: str) -> Optional[str]:
-        try:
-            if not TRANSFORMERS_AVAILABLE:
-                print("Transformers 라이브러리 (DialoGPT) 사용 불가.")
-                return None
-            if self._local_generator is None:
-                print("DialoGPT 모델 로드 시도...")
-                model_id = "microsoft/DialoGPT-medium"
-                tok = AutoTokenizer.from_pretrained(model_id)
-                mdl = AutoModelForCausalLM.from_pretrained(model_id)
-                if tok.pad_token_id is None and tok.eos_token_id is not None:
-                    tok.pad_token_id = tok.eos_token_id
-                self._local_generator = pipeline(
-                    "text-generation",
-                    model=mdl,
-                    tokenizer=tok,
-                    device=-1,
-                    return_full_text=False
-                )
-                print("DialoGPT 모델 로드 완료.")
-            prompt = (
-                f"User feels {user_input} and got {songs} recommended. "
-                f"Explain briefly in Korean (2-3 sentences) why these are a good match."
-            )
-            print("DialoGPT 모델 텍스트 생성 시도...")
-            result = self._local_generator(
-                prompt,
-                max_new_tokens=80,
-                do_sample=True,
-                temperature=0.7,
-                top_p=0.9,
-                num_return_sequences=1,
-                pad_token_id=self._local_generator.tokenizer.pad_token_id
-            )
-            print("DialoGPT 모델 텍스트 생성 완료.")
-            if result and isinstance(result, list) and result[0] is not None:
-                text = (result[0].get("generated_text") or "").strip()
-                return text if len(text) > 5 else None
-            return None
-        except Exception as e:
-            print(f"Transformers(DialoGPT) 오류: {type(e).__name__} - {e}")
-            return None
+    def build_template_explanation(self, user_input: str, songs: str) -> str:
+        return (
+            f"{user_input} 분위기에서는 {songs} 같은 곡이 감정선과 상황에 자연스럽게 맞습니다. "
+            "보컬 톤과 곡 분위기가 과하지 않게 이어져서 편하게 듣기 좋습니다."
+        )
 
 # -----------------------------
 # Flask 앱 설정
@@ -502,11 +491,11 @@ def recommend():
 def get_status():
     spotify_ok = recommender.spotify is not None
     lastfm_ok = bool(recommender.lastfm_key)
-    gemini_key_ok = bool(os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY'))
-    gemini_sdk_ok = GENAI_AVAILABLE
+    openai_key_ok = bool(os.getenv('OPENAI_API_KEY'))
+    openai_sdk_ok = OPENAI_AVAILABLE
     probe = request.args.get("probe") == "1"
-    probe_result = probe_gemini_connection() if probe else None
-    llm_ok = gemini_key_ok and gemini_sdk_ok
+    probe_result = probe_openai_connection() if probe else None
+    llm_ok = openai_key_ok and openai_sdk_ok
     if probe_result is not None:
         llm_ok = llm_ok and probe_result["ok"]
     last_llm_model = recommender.last_model_used
@@ -528,11 +517,11 @@ def get_status():
             "status": "연결됨" if lastfm_ok else "미연결",
             "api_key_configured": bool(os.getenv('LASTFM_API_KEY'))
         },
-        "gemini": {
+        "openai": {
             "status": "연결됨" if llm_ok else "미연결",
-            "api_key_configured": gemini_key_ok,
-            "sdk_installed": gemini_sdk_ok,
-            "model": DEFAULT_GEMINI_MODEL,
+            "api_key_configured": openai_key_ok,
+            "sdk_installed": openai_sdk_ok,
+            "model": DEFAULT_OPENAI_MODEL,
             "live_check_enabled": probe,
             "live_ok": None if probe_result is None else probe_result["ok"],
             "live_error": None if probe_result is None else probe_result["error"]
@@ -543,6 +532,10 @@ def get_status():
             "local_fallback_enabled": LOCAL_LLM_FALLBACK_ENABLED
         },
         "local_models": {
+            "status": "준비됨" if LOCAL_MODEL_DIR.exists() else "미준비",
+            "enabled": LOCAL_LLM_FALLBACK_ENABLED,
+            "model_id": LOCAL_MODEL_ID,
+            "model_dir": str(LOCAL_MODEL_DIR),
             "cache_dir": str(HF_CACHE_DIR),
             "cached_models": cached_local_models
         }

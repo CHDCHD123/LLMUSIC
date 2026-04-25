@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 
 from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 
@@ -95,20 +96,24 @@ def _build_fallback_report(brief_json: dict, reason: str) -> str:
     return "\n".join(lines)
 
 
-def _generate_with_gemini(question: str, brief_text: str) -> str:
-    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+def _generate_with_openai(question: str, brief_text: str) -> str:
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY 또는 GOOGLE_API_KEY 환경변수가 없습니다.")
-    model_name = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-
-    import google.generativeai as genai
-
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_name)
-    response = model.generate_content([question, brief_text])
-    text = getattr(response, "text", "") or ""
+        raise RuntimeError("OPENAI_API_KEY 환경변수가 없습니다.")
+    model_name = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
+    client = OpenAI(api_key=api_key)
+    response = client.chat.completions.create(
+        model=model_name,
+        messages=[
+            {"role": "system", "content": question},
+            {"role": "user", "content": brief_text},
+        ],
+        temperature=0.3,
+        max_tokens=800,
+    )
+    text = response.choices[0].message.content or ""
     if not text.strip():
-        raise RuntimeError("Gemini 응답 텍스트가 비어 있습니다.")
+        raise RuntimeError("OpenAI 응답 텍스트가 비어 있습니다.")
     return text
 
 
@@ -118,11 +123,11 @@ def run_report_generation(input_folder=".", output_folder="."):
     out = os.path.join(output_folder, f"genie_report_{report_date}.txt")
 
     try:
-        report_text = _generate_with_gemini(question, brief_text)
-        print(f"Gemini 리포트 생성 성공: {json_file}")
+        report_text = _generate_with_openai(question, brief_text)
+        print(f"OpenAI 리포트 생성 성공: {json_file}")
     except Exception as e:
         report_text = _build_fallback_report(brief_json, f"{type(e).__name__}: {e}")
-        print(f"Gemini 리포트 생성 실패, 기본 리포트로 대체: {type(e).__name__} - {e}")
+        print(f"OpenAI 리포트 생성 실패, 기본 리포트로 대체: {type(e).__name__} - {e}")
 
     with open(out, "w", encoding="utf-8-sig") as f:
         f.write(report_text.rstrip() + "\n")

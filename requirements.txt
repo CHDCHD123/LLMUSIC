@@ -2,8 +2,12 @@ flask
 flask-cors
 requests
 spotipy
-google-generativeai
+openai
 python-dotenv
 pandas
 numpy
 beautifulsoup4
+transformers>=4.52.0
+torch>=2.4.0
+huggingface-hub
+accelerate

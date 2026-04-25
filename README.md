@@ -20,14 +20,16 @@
 SPOTIFY_CLIENT_ID=your_spotify_client_id
 SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 LASTFM_API_KEY=your_lastfm_api_key
-GEMINI_API_KEY=your_gemini_api_key
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4.1-mini
 ```
 
 설명:
 
 - `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`: 앱 추천 기능에 사실상 필수
 - `LASTFM_API_KEY`: 없으면 Last.fm 추천만 비활성화
-- `GEMINI_API_KEY`: 없으면 지니 보고서 생성과 Gemini 설명이 동작하지 않음
+- `OPENAI_API_KEY`: 앱 설명 생성과 자동화 보고서 생성에 사용
+- `OPENAI_MODEL`: 기본값은 `gpt-4.1-mini`
 
 ## 로컬 실행 방법
 
@@ -122,7 +124,26 @@ python dags\jsontxt_genie.py
 주의:
 
 - `diff_genie.py`는 최소 2일치 `genie_top100_*.csv`가 있어야 동작합니다.
-- `jsontxt_genie.py`는 같은 날짜의 `genie_diff_brief_*.json`과 `GEMINI_API_KEY`가 필요합니다.
+- `jsontxt_genie.py`는 같은 날짜의 `genie_diff_brief_*.json`과 `OPENAI_API_KEY`가 필요합니다.
+
+## LLM 구조
+
+앱 설명 생성은 아래 순서로 동작합니다.
+
+1. OpenAI API (`OPENAI_API_KEY`)
+2. 로컬 모델 `model/EXAONE-3.5-2.4B-Instruct`
+3. 코드 내 기본 템플릿 문장
+
+로컬 모델 다운로드:
+
+```powershell
+venv\Scripts\python scripts\download_local_model.py
+```
+
+로컬 모델 경로:
+
+- `model/EXAONE-3.5-2.4B-Instruct`
+- Git 업로드 제외: `.gitignore`에서 `model/` 제외 처리
 
 ## 실행 확인 포인트
 
