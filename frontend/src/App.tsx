@@ -1,17 +1,30 @@
 import { useEffect, useState } from "react";
 
+import StatusPanel from "./components/StatusPanel";
 import AutomationPage from "./pages/AutomationPage";
 import RecommendPage from "./pages/RecommendPage";
-import StatusPanel from "./components/StatusPanel";
 import { fetchStatus } from "./services/api";
 
 const tabs = [
-  { key: "recommend", label: "추천" },
-  { key: "automation", label: "자동화" },
+  { key: "recommend", label: "추천", path: "/recommend" },
+  { key: "automation", label: "자동화", path: "/automation" },
 ] as const;
 
+type TabKey = (typeof tabs)[number]["key"];
+
+function pathToTab(pathname: string): TabKey {
+  if (pathname === "/automation") {
+    return "automation";
+  }
+  return "recommend";
+}
+
+function tabToPath(tab: TabKey): string {
+  return tabs.find((item) => item.key === tab)?.path ?? "/recommend";
+}
+
 export default function App() {
-  const [tab, setTab] = useState<(typeof tabs)[number]["key"]>("recommend");
+  const [tab, setTab] = useState<TabKey>(() => pathToTab(window.location.pathname));
   const [status, setStatus] = useState<any>(null);
   const [statusError, setStatusError] = useState("");
 
@@ -25,8 +38,27 @@ export default function App() {
     }
   }
 
+  function navigate(nextTab: TabKey) {
+    const nextPath = tabToPath(nextTab);
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({}, "", nextPath);
+    }
+    setTab(nextTab);
+  }
+
   useEffect(() => {
+    if (window.location.pathname === "/") {
+      window.history.replaceState({}, "", "/recommend");
+      setTab("recommend");
+    }
+
+    const handlePopState = () => {
+      setTab(pathToTab(window.location.pathname));
+    };
+
+    window.addEventListener("popstate", handlePopState);
     refreshStatus(true).catch(() => undefined);
+    return () => window.removeEventListener("popstate", handlePopState);
   }, []);
 
   return (
@@ -36,16 +68,17 @@ export default function App() {
           <p className="eyebrow">Service</p>
           <h2>LLMUSIC</h2>
           <p className="sidebar-copy">
-            프론트와 백엔드, 크롤링과 보고서를 분리한 새 구조입니다.
+            추천, 자동화, 차트 분석을 분리한 구조로 운영합니다.
           </p>
           <nav className="nav-list">
             {tabs.map((item) => (
               <button
                 key={item.key}
                 className={tab === item.key ? "nav-button active" : "nav-button"}
-                onClick={() => setTab(item.key)}
+                onClick={() => navigate(item.key)}
               >
-                {item.label}
+                <span>{item.label}</span>
+                <small>{item.path}</small>
               </button>
             ))}
           </nav>

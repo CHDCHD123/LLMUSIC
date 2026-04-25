@@ -133,10 +133,19 @@ export default function RecommendPage({ initialStatus, onStatusRefresh }: Props)
           <div className="recommendation-grid">
             {result.recommendations.map((item: any) => (
               <article className="song-card" key={`${item.title}-${item.artist}`}>
-                <strong>{item.title}</strong>
-                <span>{item.artist}</span>
-                <small>{item.album ?? item.source}</small>
-                <small>{item.source}</small>
+                {item.artwork_url ? (
+                  <img className="song-artwork" src={item.artwork_url} alt={`${item.title} artwork`} />
+                ) : (
+                  <div className="song-artwork placeholder-artwork">
+                    <span>{item.source}</span>
+                  </div>
+                )}
+                <div className="song-copy">
+                  <strong>{item.title}</strong>
+                  <span>{item.artist}</span>
+                  <small>{item.album ?? item.source}</small>
+                  <small>{item.source}</small>
+                </div>
                 <div className="song-actions">
                   {item.external_url ? (
                     <a className="secondary-button link-button" href={item.external_url} target="_blank" rel="noreferrer">

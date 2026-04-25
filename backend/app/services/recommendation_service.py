@@ -90,11 +90,15 @@ class RecommendationService:
                 response.raise_for_status()
                 data = response.json()
                 for track in data.get("results", [])[:4]:
+                    artwork_url = track.get("artworkUrl100")
+                    if artwork_url:
+                        artwork_url = artwork_url.replace("100x100bb", "600x600bb")
                     recommendations.append(
                         {
                             "title": track.get("trackName"),
                             "artist": track.get("artistName"),
                             "album": track.get("collectionName"),
+                            "artwork_url": artwork_url,
                             "external_url": track.get("trackViewUrl") or track.get("collectionViewUrl"),
                             "preview_url": track.get("previewUrl"),
                             "source": "iTunes Search",
@@ -133,6 +137,7 @@ class RecommendationService:
                             "title": recording.get("title"),
                             "artist": artist_names or "Unknown",
                             "album": release_title or None,
+                            "artwork_url": None,
                             "external_url": f"https://musicbrainz.org/recording/{recording.get('id')}",
                             "source": "MusicBrainz",
                         }
@@ -163,6 +168,7 @@ class RecommendationService:
                         {
                             "title": track.get("name"),
                             "artist": track.get("artist", {}).get("name", "Unknown"),
+                            "artwork_url": None,
                             "lastfm_url": track.get("url"),
                             "external_url": track.get("url"),
                             "source": "Last.fm",
@@ -204,6 +210,7 @@ class RecommendationService:
                             "title": song["곡명"],
                             "artist": song["아티스트"],
                             "rank": song.get("오늘순위", song.get("순위", 0)),
+                            "artwork_url": None,
                             "external_url": None,
                             "source": "지니차트",
                         }

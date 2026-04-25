@@ -15,6 +15,7 @@ class RecommendationItem(BaseModel):
     title: str
     artist: str
     album: str | None = None
+    artwork_url: str | None = None
     external_url: str | None = None
     spotify_url: str | None = None
     preview_url: str | None = None
