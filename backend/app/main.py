@@ -8,9 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from backend.app.api.routes.auth import router as auth_router
 from backend.app.api.routes.automation import router as automation_router
 from backend.app.api.routes.health import router as health_router
 from backend.app.api.routes.music import router as music_router
+from backend.app.services.auth_service import AuthService
 from backend.app.core.config import settings
 from backend.app.services.automation_service import AutomationService
 from backend.app.services.llm_service import LLMService
@@ -19,11 +21,13 @@ from backend.app.services.recommendation_service import RecommendationService
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    auth_service = AuthService(settings)
     llm_service = LLMService(settings)
     recommendation_service = RecommendationService(settings, llm_service)
     automation_service = AutomationService(settings)
     automation_service.start()
 
+    app.state.auth_service = auth_service
     app.state.llm_service = llm_service
     app.state.recommendation_service = recommendation_service
     app.state.automation_service = automation_service
@@ -40,6 +44,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(health_router)
+app.include_router(auth_router)
 app.include_router(music_router)
 app.include_router(automation_router)
 

@@ -11,21 +11,25 @@ router = APIRouter(prefix="/api/automation", tags=["automation"])
 
 @router.get("/status")
 def get_automation_status(request: Request) -> dict:
+    request.app.state.auth_service.require_user(request)
     return request.app.state.automation_service.get_status()
 
 
 @router.post("/run")
 def run_automation(request: Request) -> dict:
+    request.app.state.auth_service.require_user(request)
     return request.app.state.automation_service.start_pipeline_async(trigger="manual")
 
 
 @router.post("/schedule")
 def update_schedule(request: Request, payload: ScheduleRequest) -> dict:
+    request.app.state.auth_service.require_user(request)
     return request.app.state.automation_service.update_schedule(payload.enabled, payload.time)
 
 
 @router.get("/reports")
 def list_reports(request: Request) -> dict:
+    request.app.state.auth_service.require_user(request)
     settings = request.app.state.automation_service.settings
     reports = list_artifacts([settings.data_dir], "genie_report_*.txt", "genie_report_")
     items = []
@@ -42,6 +46,7 @@ def list_reports(request: Request) -> dict:
 
 @router.get("/reports/{report_name}", response_class=PlainTextResponse)
 def get_report(request: Request, report_name: str) -> str:
+    request.app.state.auth_service.require_user(request)
     settings = request.app.state.automation_service.settings
     safe_name = Path(report_name).name
     path = settings.data_dir / safe_name

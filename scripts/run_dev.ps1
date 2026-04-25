@@ -33,6 +33,27 @@ function Stop-ChildProcess {
     }
 }
 
+function Wait-BackendReady {
+    param(
+        [string]$Url,
+        [int]$TimeoutSeconds = 25
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 2
+            if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 500) {
+                return $true
+            }
+        } catch {
+        }
+        Start-Sleep -Milliseconds 700
+    }
+
+    return $false
+}
+
 try {
     Write-Host "[LLMUSIC] backend starting on http://127.0.0.1:8010"
     $backend = Start-Process -FilePath $backendExe `
@@ -41,7 +62,9 @@ try {
         -NoNewWindow `
         -PassThru
 
-    Start-Sleep -Seconds 3
+    if (-not (Wait-BackendReady -Url "http://127.0.0.1:8010/health")) {
+        throw "Backend did not become ready on http://127.0.0.1:8010/health"
+    }
 
     Write-Host "[LLMUSIC] frontend starting on http://127.0.0.1:5173"
     $frontend = Start-Process -FilePath $frontendCmd `

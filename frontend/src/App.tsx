@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import AppModal from "./components/AppModal";
 import AutomationPage from "./pages/AutomationPage";
 import HomePage from "./pages/HomePage";
+import LoginPage from "./pages/LoginPage";
 import ReportPage from "./pages/ReportPage";
 import RecommendPage from "./pages/RecommendPage";
-import { fetchStatus } from "./services/api";
+import { clearAuthToken, fetchMe, fetchStatus, getAuthToken, login as loginRequest, setAuthToken } from "./services/api";
 
 const tabs = [
   { key: "home", label: "메인", path: "/home" },
@@ -15,15 +16,18 @@ const tabs = [
 ] as const;
 
 type TabKey = (typeof tabs)[number]["key"];
+type RouteKey = TabKey | "login";
 
-function pathToTab(pathname: string): TabKey {
+function pathToTab(pathname: string): RouteKey {
   if (pathname === "/" || pathname === "/home") return "home";
+  if (pathname === "/login") return "login";
   if (pathname === "/automation") return "automation";
   if (pathname === "/reports") return "reports";
   return "recommend";
 }
 
-function tabToPath(tab: TabKey): string {
+function tabToPath(tab: RouteKey): string {
+  if (tab === "login") return "/login";
   return tabs.find((item) => item.key === tab)?.path ?? "/";
 }
 
@@ -141,7 +145,23 @@ function Footer() {
   );
 }
 
-function HomeTopBar({ onNavigate, onLoginClick }: { onNavigate: (tab: TabKey) => void; onLoginClick: () => void }) {
+function HomeTopBar({
+  onNavigate,
+  isAuthenticated,
+  username,
+  onLoginClick,
+  onSignupClick,
+  onMyPageClick,
+  onLogoutClick,
+}: {
+  onNavigate: (tab: TabKey) => void;
+  isAuthenticated: boolean;
+  username: string;
+  onLoginClick: () => void;
+  onSignupClick: () => void;
+  onMyPageClick: () => void;
+  onLogoutClick: () => void;
+}) {
   return (
     <nav className="z-50 flex w-full items-center justify-between border-b border-white/10 bg-[#0F121D]/80 px-16 py-6 shadow-[0_0_15px_rgba(212,175,55,0.1)] backdrop-blur-xl">
       <button type="button" className="text-2xl italic tracking-[0.18em] text-amber-500" style={{ fontFamily: '"Noto Serif", serif' }} onClick={() => onNavigate("home")}>
@@ -166,14 +186,51 @@ function HomeTopBar({ onNavigate, onLoginClick }: { onNavigate: (tab: TabKey) =>
         ))}
       </div>
       <div className="flex items-center gap-8">
-        <button
-          type="button"
-          onClick={onLoginClick}
-          className="text-sm uppercase tracking-[0.2em] text-amber-500 transition-colors duration-500 hover:text-amber-400"
-          style={{ fontFamily: '"Noto Serif", serif' }}
-        >
-          LOGIN
-        </button>
+        {isAuthenticated ? (
+          <>
+            <div
+              className="rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 text-[11px] uppercase tracking-[0.18em] text-[#f3d7a0]"
+              style={{ fontFamily: '"Noto Serif", serif' }}
+            >
+              {username || "ADMIN"}
+            </div>
+            <button
+              type="button"
+              onClick={onMyPageClick}
+              className="text-sm uppercase tracking-[0.2em] text-white/70 transition-colors duration-500 hover:text-white"
+              style={{ fontFamily: '"Noto Serif", serif' }}
+            >
+              MY PAGE
+            </button>
+            <button
+              type="button"
+              onClick={onLogoutClick}
+              className="text-sm uppercase tracking-[0.2em] text-amber-500 transition-colors duration-500 hover:text-amber-400"
+              style={{ fontFamily: '"Noto Serif", serif' }}
+            >
+              LOGOUT
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={onSignupClick}
+              className="text-sm uppercase tracking-[0.2em] text-white/70 transition-colors duration-500 hover:text-white"
+              style={{ fontFamily: '"Noto Serif", serif' }}
+            >
+              SIGN UP
+            </button>
+            <button
+              type="button"
+              onClick={onLoginClick}
+              className="text-sm uppercase tracking-[0.2em] text-amber-500 transition-colors duration-500 hover:text-amber-400"
+              style={{ fontFamily: '"Noto Serif", serif' }}
+            >
+              SIGN IN
+            </button>
+          </>
+        )}
       </div>
     </nav>
   );
@@ -200,10 +257,16 @@ function HomeFooter() {
 }
 
 export default function App() {
-  const [tab, setTab] = useState<TabKey>(() => pathToTab(window.location.pathname));
+  const [tab, setTab] = useState<RouteKey>(() => pathToTab(window.location.pathname));
   const [status, setStatus] = useState<any>(null);
   const [statusError, setStatusError] = useState("");
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authUser, setAuthUser] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginBusy, setLoginBusy] = useState(false);
+  const [signupModalOpen, setSignupModalOpen] = useState(false);
+  const [myPageModalOpen, setMyPageModalOpen] = useState(false);
 
   async function refreshStatus(probe = false) {
     try {
@@ -216,9 +279,51 @@ export default function App() {
   }
 
   function navigate(nextTab: TabKey) {
+    if (!isAuthenticated && nextTab !== "home") {
+      window.history.pushState({}, "", "/login");
+      window.sessionStorage.setItem("llmusic-login-redirect", tabToPath(nextTab));
+      setTab("login");
+      return;
+    }
     const nextPath = tabToPath(nextTab);
     if (window.location.pathname !== nextPath) window.history.pushState({}, "", nextPath);
     setTab(nextTab);
+  }
+
+  async function handleLogin(username: string, password: string) {
+    if (!username.trim()) {
+      setLoginError("아이디를 입력해 주세요.");
+      return;
+    }
+    if (!password.trim()) {
+      setLoginError("비밀번호를 입력해 주세요.");
+      return;
+    }
+    setLoginBusy(true);
+    setLoginError("");
+    try {
+      const response = await loginRequest(username, password);
+      setAuthToken(response.token);
+      setIsAuthenticated(true);
+      setAuthUser(response.username);
+      const redirectPath = window.sessionStorage.getItem("llmusic-login-redirect") || "/recommend";
+      window.sessionStorage.removeItem("llmusic-login-redirect");
+      window.history.pushState({}, "", redirectPath);
+      setTab(pathToTab(redirectPath));
+    } catch (error) {
+      setLoginError(error instanceof Error ? error.message : "로그인 실패");
+    } finally {
+      setLoginBusy(false);
+    }
+  }
+
+  function handleLogout() {
+    clearAuthToken();
+    setIsAuthenticated(false);
+    setAuthUser("");
+    setLoginError("");
+    if (window.location.pathname !== "/home") window.history.pushState({}, "", "/home");
+    setTab("home");
   }
 
   useEffect(() => {
@@ -226,34 +331,88 @@ export default function App() {
       window.history.replaceState({}, "", "/home");
       setTab("home");
     }
-    const handlePopState = () => setTab(pathToTab(window.location.pathname));
+    const handlePopState = () => {
+      const nextTab = pathToTab(window.location.pathname);
+      if (!isAuthenticated && !["home", "login"].includes(nextTab)) {
+        window.history.replaceState({}, "", "/login");
+        setTab("login");
+        return;
+      }
+      setTab(nextTab);
+    };
     window.addEventListener("popstate", handlePopState);
     refreshStatus(true).catch(() => undefined);
+    if (!getAuthToken()) {
+      setAuthChecked(true);
+      setIsAuthenticated(false);
+      setAuthUser("");
+      const nextTab = pathToTab(window.location.pathname);
+      if (!["home", "login"].includes(nextTab)) {
+        window.history.replaceState({}, "", "/login");
+        setTab("login");
+      }
+    } else {
+      fetchMe()
+        .then((response) => {
+          setIsAuthenticated(true);
+          setAuthUser(response.username);
+        })
+        .catch(() => {
+          clearAuthToken();
+          setIsAuthenticated(false);
+          setAuthUser("");
+          const nextTab = pathToTab(window.location.pathname);
+          if (!["home", "login"].includes(nextTab)) {
+            window.history.replaceState({}, "", "/login");
+            setTab("login");
+          }
+        })
+        .finally(() => setAuthChecked(true));
+    }
     return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-background text-on-background font-body-base flex flex-col">
       <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_18%_16%,rgba(0,240,255,0.08),transparent_24%),radial-gradient(circle_at_84%_14%,rgba(182,0,248,0.07),transparent_20%),linear-gradient(180deg,#11131c_0%,#101117_50%,#0c0d13_100%)]" />
       <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px] opacity-[0.08]" />
       <TopStatusBar status={status} onRefresh={() => refreshStatus(true)} />
-      <HomeTopBar onNavigate={navigate} onLoginClick={() => setLoginModalOpen(true)} />
+      <HomeTopBar
+        onNavigate={navigate}
+        isAuthenticated={isAuthenticated}
+        username={authUser}
+        onLoginClick={() => {
+          if (window.location.pathname !== "/login") window.history.pushState({}, "", "/login");
+          setTab("login");
+        }}
+        onSignupClick={() => setSignupModalOpen(true)}
+        onMyPageClick={() => setMyPageModalOpen(true)}
+        onLogoutClick={handleLogout}
+      />
       <main className={`relative z-10 flex-1 w-full ${tab === "home" ? "" : "max-w-[1720px] mx-auto px-4 py-8 md:px-6 lg:px-8 space-y-8"}`}>
         {tab === "home" ? <HomePage onNavigate={navigate} /> : null}
-        {tab === "recommend" ? <RecommendPage initialStatus={status} onStatusRefresh={() => refreshStatus(false)} /> : null}
-        {tab === "automation" ? <AutomationPage systemStatus={status} onStatusRefresh={() => refreshStatus(false)} /> : null}
-        {tab === "reports" ? <ReportPage /> : null}
+        {tab === "login" ? <LoginPage onLogin={handleLogin} busy={loginBusy} error={loginError} /> : null}
+        {authChecked && isAuthenticated && tab === "recommend" ? <RecommendPage initialStatus={status} onStatusRefresh={() => refreshStatus(false)} /> : null}
+        {authChecked && isAuthenticated && tab === "automation" ? <AutomationPage systemStatus={status} onStatusRefresh={() => refreshStatus(false)} /> : null}
+        {authChecked && isAuthenticated && tab === "reports" ? <ReportPage /> : null}
       </main>
       <div className="relative z-10">
         <HomeFooter />
       </div>
       {statusError ? <div className="fixed bottom-4 right-4 rounded-lg border border-red-500/30 bg-red-950/80 px-3 py-2 text-sm text-red-200">{statusError}</div> : null}
       <AppModal
-        open={loginModalOpen}
+        open={signupModalOpen}
         title="준비중입니다"
-        description="로그인 기능은 아직 준비 중입니다. 디자인한 로그인 화면이 준비되면 이 구조에 그대로 연결할 수 있습니다."
+        description="회원가입 기능은 아직 준비 중입니다. 현재는 관리자 계정으로만 로그인할 수 있습니다."
         confirmLabel="확인"
-        onClose={() => setLoginModalOpen(false)}
+        onClose={() => setSignupModalOpen(false)}
+      />
+      <AppModal
+        open={myPageModalOpen}
+        title="준비중입니다"
+        description="마이페이지 기능은 아직 준비 중입니다. 현재는 로그인 상태 표시만 먼저 연결했습니다."
+        confirmLabel="확인"
+        onClose={() => setMyPageModalOpen(false)}
       />
     </div>
   );

@@ -22,6 +22,30 @@
 - 런타임 추천과 자동화 비교는 `data/`만 기준으로 동작합니다.
 - `delfile/data_archive/`는 보관용이며, 현재 실행 로직에서 비교 기준으로 가져오지 않습니다.
 
+## 접근 제어
+
+현재 접근 정책:
+
+- 메인 페이지: 공개
+- 추천: 로그인 필요
+- 자동화: 로그인 필요
+- 리포트: 로그인 필요
+
+로그인 구조:
+
+- 로그인 페이지: `/login`
+- 기본 관리자 계정:
+  - 아이디 `admin`
+  - 비밀번호 `1234`
+- 회원가입 버튼은 현재 UI만 있고, 클릭 시 `준비중입니다` 안내를 표시합니다.
+- 로그인 후 헤더 우측에 사용자 이름, `MY PAGE`, `LOGOUT`이 표시됩니다.
+- `MY PAGE`도 현재는 `준비중입니다` 안내만 표시합니다.
+
+주의:
+
+- 실제로는 `.env`의 `ADMIN_USERNAME`, `ADMIN_PASSWORD`가 우선입니다.
+- 위 기본 계정은 `.env`에 값이 없을 때만 fallback으로 사용됩니다.
+
 ## 추천 기능
 
 추천은 아래 소스를 조합합니다.
@@ -36,6 +60,11 @@
 - `data/`에 `genie_diff_brief_*.json`이 있으면 지니 분석 결과도 추천에 반영
 - `data/`에 지니 분석 파일이 없으면 공개 API만으로 추천
 - 설명 생성은 `OpenAI` 우선, 실패 시 로컬 모델 fallback
+- 추천 엔진은 페이지에서 직접 선택할 수 있습니다.
+  - `AUTO`
+  - `OpenAI`
+  - `EXAONE`
+  - `Template`
 - 추천 페이지는 입력값만 세션에 유지하고, 추천 결과 자체는 서버 재시작/새로고침 시 복원하지 않습니다.
 
 현재는 `Spotify`를 사용하지 않습니다.
@@ -75,6 +104,7 @@
 현재 프론트 탭:
 
 - 메인
+- 로그인
 - 추천
 - 자동화
 - 리포트
@@ -118,6 +148,9 @@ LASTFM_API_KEY=your_lastfm_api_key
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4o-mini
 LOCAL_LLM_MODEL_ID=LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=1234
+AUTH_SECRET=change-this-secret
 ```
 
 최소 실행 기준:
@@ -139,6 +172,7 @@ LOCAL_LLM_MODEL_ID=LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct
 - 백엔드: `http://127.0.0.1:8010`
 
 `LLMUSIC.bat`를 실행한 콘솔에서 `Ctrl + C`를 누르면 백엔드와 프론트가 같이 종료됩니다.
+또한 백엔드 `8010/health`가 실제로 응답한 뒤 프론트를 띄우도록 되어 있어, 시작 시점 프록시 에러를 줄이도록 맞춰져 있습니다.
 
 빌드된 프론트를 FastAPI 단독으로 서빙:
 
@@ -153,6 +187,7 @@ uvicorn backend.app.main:app --host 127.0.0.1 --port 8010
 이 경우 아래 경로를 직접 열거나 새로고침해도 됩니다.
 
 - `http://127.0.0.1:8010/`
+- `http://127.0.0.1:8010/login`
 - `http://127.0.0.1:8010/recommend`
 - `http://127.0.0.1:8010/automation`
 - `http://127.0.0.1:8010/reports`
@@ -170,3 +205,4 @@ cloudflared tunnel --url http://localhost:8010
 - `delfile/data_archive/`는 보관용입니다.
 - 현재 비교 분석과 추천 fallback은 보관 데이터에 의존하지 않습니다.
 - `data/`를 비워두면 첫 자동화 실행은 기준 데이터 저장만 수행합니다.
+- 비로그인 상태에서 보호 페이지로 접근하면 `/login`으로 이동합니다.

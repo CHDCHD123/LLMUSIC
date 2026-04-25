@@ -14,6 +14,16 @@ class RecommendRequest(BaseModel):
     engine_mode: Literal["auto", "openai", "local", "template"] = "auto"
 
 
+class LoginRequest(BaseModel):
+    username: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+
+
+class AuthResponse(BaseModel):
+    token: str
+    username: str
+
+
 class RecommendationItem(BaseModel):
     title: str
     artist: str

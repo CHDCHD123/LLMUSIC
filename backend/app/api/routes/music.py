@@ -13,6 +13,7 @@ def get_status(request: Request, probe: bool = False) -> dict:
 
 @router.post("/recommend", response_model=RecommendResponse)
 def recommend(request: Request, payload: RecommendRequest) -> RecommendResponse:
+    request.app.state.auth_service.require_user(request)
     recommendation_service = request.app.state.recommendation_service
     try:
         recommendations, explanation, model_used = recommendation_service.recommend(
