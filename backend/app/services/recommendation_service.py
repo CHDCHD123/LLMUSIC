@@ -10,6 +10,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 
 from backend.app.core.config import Settings
 from backend.app.models.schemas import RecommendationItem
+from backend.app.services.artifact_utils import list_artifacts
 from backend.app.services.llm_service import LLMService
 
 
@@ -149,10 +150,14 @@ class RecommendationService:
         return recommendations
 
     def get_genie_backup(self, emotion: str) -> list[dict]:
-        json_files = list(self.settings.data_dir.glob("genie_diff_brief_*.json"))
-        if not json_files:
+        candidates = list_artifacts(
+            [self.settings.data_dir, self.settings.archive_dir],
+            "genie_diff_brief_*.json",
+            "genie_diff_brief_",
+        )
+        if not candidates:
             return []
-        latest_json = max(json_files, key=lambda item: item.stat().st_mtime)
+        latest_json = candidates[-1][1]
         with open(latest_json, "r", encoding="utf-8") as file:
             data = json.load(file)
         genre_mapping = {
@@ -216,4 +221,3 @@ class RecommendationService:
             },
             **llm_status,
         }
-

@@ -5,7 +5,6 @@ import threading
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -28,7 +27,6 @@ class AutomationService:
             "last_finished_at": None,
             "last_result": None,
             "last_error": None,
-            "last_skip_reason": None,
             "last_outputs": {},
             "schedule_enabled": False,
             "schedule_time": "17:00",
@@ -36,6 +34,12 @@ class AutomationService:
         self._load_state()
 
     def start(self) -> None:
+        with self.lock:
+            if self.state.get("running"):
+                self.state["running"] = False
+                if self.state.get("last_result", "").endswith("started"):
+                    self.state["last_result"] = "startup reset"
+                self._save_state()
         if not self.scheduler.running:
             self.scheduler.start()
         if self.state["schedule_enabled"]:
@@ -50,6 +54,7 @@ class AutomationService:
             try:
                 with open(self.state_path, "r", encoding="utf-8") as file:
                     self.state.update(json.load(file))
+                self.state.pop("last_skip_reason", None)
             except Exception:
                 pass
 
@@ -76,32 +81,14 @@ class AutomationService:
             self._save_state()
             return self.get_status()
 
-    def _already_succeeded_today(self) -> bool:
-        finished_at = self.state.get("last_finished_at")
-        last_result = self.state.get("last_result") or ""
-        if not finished_at or "success" not in last_result:
-            return False
-        try:
-            finished_date = datetime.fromisoformat(finished_at).astimezone(ZoneInfo(self.settings.timezone)).date()
-        except ValueError:
-            return False
-        today = datetime.now(ZoneInfo(self.settings.timezone)).date()
-        return finished_date == today
-
     def start_pipeline_async(self, trigger: str = "manual") -> dict[str, Any]:
         with self.lock:
             if self.state["running"]:
                 return self.get_status()
-            if self._already_succeeded_today():
-                self.state["last_result"] = f"{trigger} skipped"
-                self.state["last_skip_reason"] = "오늘은 이미 성공적으로 한 번 실행되었습니다."
-                self._save_state()
-                return self.get_status()
             self.state["running"] = True
-            self.state["last_started_at"] = datetime.now(ZoneInfo(self.settings.timezone)).isoformat()
+            self.state["last_started_at"] = datetime.now().astimezone().isoformat()
             self.state["last_result"] = f"{trigger} started"
             self.state["last_error"] = None
-            self.state["last_skip_reason"] = None
             self._save_state()
 
         thread = threading.Thread(target=self._run_pipeline_sync, args=(trigger,), daemon=True)
@@ -109,16 +96,13 @@ class AutomationService:
         return self.get_status()
 
     def _run_pipeline_sync(self, trigger: str = "scheduler") -> None:
-        with self.lock:
-            if self._already_succeeded_today():
-                self.state["running"] = False
-                self.state["last_result"] = f"{trigger} skipped"
-                self.state["last_skip_reason"] = "오늘은 이미 성공적으로 한 번 실행되었습니다."
-                self._save_state()
-                return
         try:
             crawl_path = run_crawler(self.settings.data_dir)
-            diff_path, brief_path = run_diff_analysis(self.settings.data_dir, self.settings.data_dir)
+            diff_path, brief_path = run_diff_analysis(
+                self.settings.data_dir,
+                self.settings.data_dir,
+                self.settings.archive_dir,
+            )
             report_path = generate_report(self.settings, self.settings.data_dir, self.settings.data_dir)
             with self.lock:
                 self.state["last_outputs"] = {
@@ -129,16 +113,14 @@ class AutomationService:
                 }
                 self.state["last_result"] = f"{trigger} success"
                 self.state["last_error"] = None
-                self.state["last_skip_reason"] = None
         except Exception as exc:
             with self.lock:
                 self.state["last_result"] = f"{trigger} failed"
                 self.state["last_error"] = f"{type(exc).__name__}: {exc}"
-                self.state["last_skip_reason"] = None
         finally:
             with self.lock:
                 self.state["running"] = False
-                self.state["last_finished_at"] = datetime.now(ZoneInfo(self.settings.timezone)).isoformat()
+                self.state["last_finished_at"] = datetime.now().astimezone().isoformat()
                 self._save_state()
 
     def get_status(self) -> dict[str, Any]:

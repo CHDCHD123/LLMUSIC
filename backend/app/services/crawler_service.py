@@ -10,6 +10,8 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
+from backend.app.services.artifact_utils import format_snapshot_timestamp
+
 ROOT = "https://www.genie.co.kr"
 CHART = f"{ROOT}/chart/top200"
 HEADERS = {
@@ -189,7 +191,6 @@ def run_crawler(output_folder: str | os.PathLike[str]) -> Path:
         ],
     ).sort_values("순위")
 
-    output_path = output_dir / f"genie_top100_{datetime.today().strftime('%Y-%m-%d')}.csv"
+    output_path = output_dir / f"genie_top100_{format_snapshot_timestamp(datetime.now())}.csv"
     df.to_csv(output_path, index=False, encoding="utf-8-sig")
     return output_path
-

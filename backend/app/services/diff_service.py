@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import glob
 import json
 from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+from backend.app.services.artifact_utils import format_snapshot_timestamp, list_artifacts
 
 REQUIRED_COLS = [
     "순위",
@@ -50,15 +51,12 @@ FINAL_COLS = [
 ]
 
 
-def find_latest_two(folder: str | Path) -> tuple[Path, Path]:
-    files = glob.glob(str(Path(folder) / "genie_top100_*.csv"))
-    if len(files) < 2:
-        raise FileNotFoundError("최신 CSV 2개 이상이 필요합니다.")
-    sorted_files = sorted(
-        files,
-        key=lambda item: datetime.strptime(Path(item).stem.replace("genie_top100_", ""), "%Y-%m-%d"),
-    )
-    return Path(sorted_files[-1]), Path(sorted_files[-2])
+def find_latest_two(*folders: str | Path) -> tuple[tuple[datetime, Path], tuple[datetime, Path]]:
+    directories = [Path(folder) for folder in folders]
+    snapshots = list_artifacts(directories, "genie_top100_*.csv", "genie_top100_")
+    if len(snapshots) < 2:
+        raise FileNotFoundError("비교를 위해 지니 차트 CSV 2개 이상이 필요합니다.")
+    return snapshots[-1], snapshots[-2]
 
 
 def _to_int_safe(series: pd.Series) -> pd.Series:
@@ -238,12 +236,29 @@ def build_diff(today: pd.DataFrame, yesterday: pd.DataFrame) -> pd.DataFrame:
 
 def _pick_top_k(df: pd.DataFrame, sort_col: str, k: int = 10, descending: bool = True) -> list[dict]:
     artist_col = "А티스트" if "А티스트" in df.columns else "아티스트"
-    cols = ["곡명", artist_col, "장르", "어제순위", "오늘순위", "순위변동", "좋아요변화율(%)", "청취자수변화율(%)", "재생수변화율(%)"]
+    cols = [
+        "곡명",
+        artist_col,
+        "장르",
+        "어제순위",
+        "오늘순위",
+        "순위변동",
+        "좋아요변화율(%)",
+        "청취자수변화율(%)",
+        "재생수변화율(%)",
+    ]
     cols = [col for col in cols if col in df.columns]
     return df.sort_values(sort_col, ascending=not descending)[cols].head(k).to_dict(orient="records")
 
 
-def make_llm_brief(diff_df: pd.DataFrame, big_rank: int = 10, big_pct: float = 10.0, top_k: int = 10) -> dict:
+def make_llm_brief(
+    diff_df: pd.DataFrame,
+    current_timestamp: datetime,
+    previous_timestamp: datetime,
+    big_rank: int = 10,
+    big_pct: float = 10.0,
+    top_k: int = 10,
+) -> dict:
     is_new = diff_df["분류"] == "신규진입"
     is_drop = diff_df["분류"] == "차트이탈"
     is_keep = diff_df["분류"] == "유지"
@@ -265,7 +280,6 @@ def make_llm_brief(diff_df: pd.DataFrame, big_rank: int = 10, big_pct: float = 1
         | (keep["abs_play"] >= big_pct)
     ]
 
-    genre_changes: list[dict]
     if is_genre.any():
         genre = diff_df[is_genre][["곡명", "순위변동"]].rename(columns={"곡명": "장르", "순위변동": "변화량"})
         genre_changes = genre[genre["변화량"] != 0].sort_values("변화량", ascending=False).to_dict(orient="records")
@@ -287,7 +301,9 @@ def make_llm_brief(diff_df: pd.DataFrame, big_rank: int = 10, big_pct: float = 1
 
     return {
         "meta": {
-            "date": datetime.today().strftime("%Y-%m-%d"),
+            "date": current_timestamp.strftime("%Y-%m-%d"),
+            "current_timestamp": current_timestamp.isoformat(),
+            "previous_timestamp": previous_timestamp.isoformat(),
             "rules": {"big_rank_abs": big_rank, "big_pct_abs": big_pct, "top_k": top_k},
             "counts": {
                 "new": int(is_new.sum()),
@@ -313,19 +329,34 @@ def make_llm_brief(diff_df: pd.DataFrame, big_rank: int = 10, big_pct: float = 1
     }
 
 
-def run_diff_analysis(input_folder: str | Path, output_folder: str | Path) -> tuple[Path, Path]:
+def run_diff_analysis(
+    input_folder: str | Path,
+    output_folder: str | Path,
+    archive_folder: str | Path | None = None,
+) -> tuple[Path, Path]:
     input_dir = Path(input_folder)
     output_dir = Path(output_folder)
+    archive_dir = Path(archive_folder) if archive_folder else None
     output_dir.mkdir(parents=True, exist_ok=True)
-    today_path, yday_path = find_latest_two(input_dir)
+
+    search_dirs: list[Path] = [input_dir]
+    if archive_dir:
+        search_dirs.append(archive_dir)
+
+    (current_timestamp, today_path), (previous_timestamp, yday_path) = find_latest_two(*search_dirs)
     today = load_and_clean(today_path)
     yday = load_and_clean(yday_path)
     diff_df = build_diff(today, yday)
-    date_str = datetime.today().strftime("%Y-%m-%d")
-    diff_path = output_dir / f"genie_diff_{date_str}.csv"
-    brief_path = output_dir / f"genie_diff_brief_{date_str}.json"
+
+    timestamp_text = format_snapshot_timestamp(current_timestamp)
+    diff_path = output_dir / f"genie_diff_{timestamp_text}.csv"
+    brief_path = output_dir / f"genie_diff_brief_{timestamp_text}.json"
     diff_df.to_csv(diff_path, index=False, encoding="utf-8-sig")
     with open(brief_path, "w", encoding="utf-8") as file:
-        json.dump(make_llm_brief(diff_df), file, ensure_ascii=False, indent=2)
+        json.dump(
+            make_llm_brief(diff_df, current_timestamp=current_timestamp, previous_timestamp=previous_timestamp),
+            file,
+            ensure_ascii=False,
+            indent=2,
+        )
     return diff_path, brief_path
-

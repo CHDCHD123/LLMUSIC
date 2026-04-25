@@ -56,7 +56,9 @@ export default function AutomationPage() {
         <p className="lead">
           서버가 켜져 있는 동안 사용자가 지정한 시각에 지니 크롤링, diff 생성, OpenAI 보고서 생성을 순서대로 실행합니다.
         </p>
-        <p className="lead">같은 날짜에는 성공 기준으로 1회만 실행됩니다.</p>
+        <p className="lead">
+          수동 실행과 예약 실행을 모두 지원하며, 산출물 파일명에는 실행 시각이 함께 기록됩니다.
+        </p>
       </section>
 
       <section className="panel">
@@ -74,7 +76,6 @@ export default function AutomationPage() {
             <div><strong>실행 시간</strong><span>{status.schedule_time ?? "-"}</span></div>
             <div><strong>다음 실행</strong><span>{status.next_run_at ?? "-"}</span></div>
             <div><strong>마지막 결과</strong><span>{status.last_result ?? "-"}</span></div>
-            <div><strong>스킵 사유</strong><span>{status.last_skip_reason ?? "-"}</span></div>
             <div><strong>마지막 시작</strong><span>{status.last_started_at ?? "-"}</span></div>
             <div><strong>마지막 종료</strong><span>{status.last_finished_at ?? "-"}</span></div>
             <div><strong>에러</strong><span>{status.last_error ?? "-"}</span></div>
@@ -86,6 +87,7 @@ export default function AutomationPage() {
         <div className="section-heading">
           <h2>수동 실행</h2>
         </div>
+        <p>필요할 때 즉시 크롤링과 분석을 실행할 수 있습니다. 동일한 날에도 여러 번 실행할 수 있습니다.</p>
         <button className="primary-button" onClick={handleRunNow}>
           지금 실행
         </button>
@@ -95,6 +97,7 @@ export default function AutomationPage() {
         <div className="section-heading">
           <h2>자동 실행 시간</h2>
         </div>
+        <p>지정한 시각의 정각에 자동 파이프라인이 실행됩니다. 서버가 켜져 있어야 예약 실행이 동작합니다.</p>
         <form className="schedule-form" onSubmit={handleScheduleSave}>
           <label className="field">
             <span>매일 실행할 시간</span>

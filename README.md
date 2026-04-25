@@ -1,41 +1,27 @@
 # LLMUSIC
 
-`LLMUSIC`는 감정 기반 음악 추천, 지니 차트 크롤링, diff 분석, 보고서 생성, 예약 실행을 한 프로젝트 안에서 관리하는 서비스입니다.
+`LLMUSIC`는 감정 기반 음악 추천과 지니 차트 크롤링/분석/리포트 생성을 한 프로젝트에서 관리하는 서비스입니다.
 
-## 기존 구조와 변경점
+## 구조 변경 요약
 
-### 기존 구조
+이전 구조는 Flask 서버, 정적 프론트, 크롤링 스크립트, Airflow/Docker 파일이 루트에 섞여 있었습니다. 추천 로직과 자동화 로직도 강하게 결합되어 있어서 유지보수가 어려운 상태였습니다.
 
-- 루트에 `musicapp.py` 하나로 Flask 서버와 추천 로직이 섞여 있었음
-- `index.html`, `css/`, `js/` 정적 프론트가 루트에 직접 붙어 있었음
-- `dags/`에 크롤링, diff, 보고서, Airflow DAG가 함께 있었음
-- Docker/Airflow 중심 자동화 구조였음
-- 추천/크롤링/보고서/자동화 책임이 분리되어 있지 않았음
-
-### 현재 구조
+현재 구조는 다음처럼 분리했습니다.
 
 - `frontend/`
   React + Vite + TypeScript 프론트엔드
 - `backend/`
   FastAPI 백엔드
 - `backend/app/services/`
-  추천, LLM, 크롤링, diff, 보고서, 자동화 스케줄링을 모듈별로 분리
+  추천, LLM, 크롤링, diff 분석, 리포트, 자동화 스케줄링 모듈
 - `data/`
-  크롤링 결과, diff 결과, 브리프 JSON, 보고서 TXT 저장
-- `model/`
-  로컬 fallback 모델 저장 위치
+  새로 생성되는 크롤링/분석/리포트 산출물 저장 폴더
 - `delfile/`
-  예전 Flask/정적 프론트/Docker/Airflow 파일 보관
+  예전 Flask/정적 프론트/Docker/Airflow 파일과 과거 데이터 보관 폴더
+- `model/`
+  로컬 LLM fallback 모델 저장 폴더
 
-즉 지금은
-
-- 프론트
-- 백엔드 API
-- 크롤링
-- 보고서
-- 자동화
-
-가 나뉘어 있습니다.
+즉 지금은 프론트, 백엔드, 크롤링, 분석, 리포트, 자동화가 역할별로 나뉘어 있습니다.
 
 ## 현재 기능
 
@@ -44,11 +30,10 @@
 - 로컬 EXAONE fallback
 - 최종 템플릿 fallback
 - 지니 차트 크롤링
-- 전일 diff 분석
-- OpenAI 보고서 생성
+- 직전 스냅샷 대비 diff 분석
+- OpenAI 차트 리포트 생성
 - 자동화 페이지에서 수동 실행
 - 자동화 페이지에서 매일 실행 시간 설정
-- 동일 날짜 기준 성공 1회 실행 제한
 
 ## 디렉터리 구조
 
@@ -62,9 +47,10 @@ LLMUSIC/
 │     └─ services/
 ├─ frontend/
 ├─ data/
+├─ delfile/
+│  └─ data_archive/
 ├─ model/
 ├─ scripts/
-├─ delfile/
 ├─ LLMUSIC.bat
 ├─ README.md
 └─ requirements.txt
@@ -72,9 +58,7 @@ LLMUSIC/
 
 ## 설치해야 하는 것
 
-### 1. Python 가상환경 패키지
-
-루트 기준:
+Python 패키지:
 
 ```powershell
 venv\Scripts\python -m pip install -r requirements.txt
@@ -89,13 +73,14 @@ venv\Scripts\python -m pip install -r requirements.txt
 - `openai`
 - `pandas`
 - `numpy`
+- `requests`
 - `beautifulsoup4`
 - `transformers`
 - `torch`
 - `huggingface-hub`
 - `accelerate`
 
-### 2. 프론트엔드 패키지
+프론트 패키지:
 
 ```powershell
 cd frontend
@@ -109,15 +94,13 @@ npm install
 - `vite`
 - `typescript`
 
-### 3. 로컬 모델
-
-로컬 fallback 모델 다운로드:
+로컬 모델 다운로드:
 
 ```powershell
 venv\Scripts\python scripts\download_local_model.py
 ```
 
-현재 모델:
+현재 로컬 fallback 모델:
 
 - `LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct`
 
@@ -129,14 +112,15 @@ venv\Scripts\python scripts\download_local_model.py
 
 ## 대략적인 용량
 
-환경에 따라 차이가 있지만 현재 기준으로 보면 대략 이 정도를 잡으면 됩니다.
+환경에 따라 차이는 있지만 대략 이 정도를 보면 됩니다.
 
 - Python 가상환경 + 백엔드 패키지: 약 `2~4GB`
 - 프론트 `node_modules`: 약 `150~300MB`
 - EXAONE 로컬 모델: 약 `9~10GB`
-- `data/` 산출물: 날짜가 쌓일수록 증가, 현재는 수십 MB 수준
+- `data/` 산출물: 실행 횟수에 따라 증가, 개별 파일은 보통 수 MB 내외
+- `delfile/data_archive/` 과거 이력: 누적 데이터 양에 따라 계속 증가
 
-즉 로컬 모델까지 포함하면 전체적으로 `12GB+` 정도는 여유를 보는 편이 안전합니다.
+로컬 모델까지 포함하면 전체적으로 `12GB+` 여유를 보는 편이 안전합니다.
 
 ## 환경 변수
 
@@ -153,25 +137,20 @@ LOCAL_LLM_MODEL_ID=LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct
 
 ## 실행 방법
 
-### 한 번에 실행
+한 번에 실행:
 
 ```powershell
 .\LLMUSIC.bat
 ```
 
-이 배치 파일은
+이 배치 파일은 아래 두 프로세스를 같이 띄웁니다.
 
-- 백엔드 `FastAPI`를 `127.0.0.1:8010`
-- 프론트 `Vite`를 `127.0.0.1:5173`
+- 백엔드 `FastAPI`: `http://127.0.0.1:8010`
+- 프론트 `Vite`: `http://127.0.0.1:5173`
 
-로 같이 띄웁니다.
+`LLMUSIC.bat`를 실행한 콘솔에서 `Ctrl + C`를 누르면 백엔드와 프론트 프로세스가 같이 종료되도록 구성했습니다.
 
-중요:
-
-- `LLMUSIC.bat`를 실행한 콘솔에서 `Ctrl + C`를 누르면
-- 백엔드와 프론트 프로세스를 같이 종료하도록 구성했습니다.
-
-### 수동 실행
+수동 실행:
 
 백엔드:
 
@@ -191,40 +170,47 @@ npm run dev -- --host 127.0.0.1 --port 5173
 
 자동화는 프론트에 별도 페이지로 들어가 있습니다.
 
-할 수 있는 것:
+가능한 작업:
 
 - 수동으로 크롤링/분석/보고서 실행
 - 매일 실행 시간 저장
 - 자동 실행 끄기
 - 최근 실행 결과와 산출물 경로 확인
 
-동작 방식:
+동작 순서:
 
-1. 지니 크롤링
-2. diff 생성
+1. 지니 차트 크롤링
+2. 직전 스냅샷과 diff 생성
 3. 브리프 JSON 생성
 4. OpenAI 보고서 생성
 
+중요한 변경점:
+
+- 하루 1회 제한은 제거했습니다.
+- 같은 날에도 수동 실행을 여러 번 할 수 있습니다.
+- 예약 실행도 매일 지정 시각에 계속 동작합니다.
+- 파일명에 시각까지 포함되어 실행 단위 이력이 남습니다.
+- 리포트는 직전 브리프/직전 리포트와의 시간 간격을 함께 참고해서 생성됩니다.
+
 저장 위치:
 
-- 전부 `data/` 폴더에 저장
+- 새 산출물은 전부 `data/`
+- 과거 이력은 `delfile/data_archive/`
 
-예시 파일:
+예시 파일명:
 
-- `genie_top100_YYYY-MM-DD.csv`
-- `genie_diff_YYYY-MM-DD.csv`
-- `genie_diff_brief_YYYY-MM-DD.json`
-- `genie_report_YYYY-MM-DD.txt`
+- `genie_top100_YYYY-MM-DD_HH-MM-SS.csv`
+- `genie_diff_YYYY-MM-DD_HH-MM-SS.csv`
+- `genie_diff_brief_YYYY-MM-DD_HH-MM-SS.json`
+- `genie_report_YYYY-MM-DD_HH-MM-SS.txt`
 
-### 일 1회 제한
+리포트 상단에는 다음 정보가 포함됩니다.
 
-자동화는 같은 날짜에 성공 기준으로 1회만 실행됩니다.
-
-즉:
-
-- 수동 실행도 하루 1회 성공 후에는 스킵
-- 예약 실행도 하루 1회 성공 후에는 스킵
-- 실패한 경우에는 다시 시도 가능
+- 현재 분석 시각
+- 직전 차트 비교 시각
+- 직전 차트 대비 경과 시간
+- 마지막 리포트 시각
+- 마지막 리포트 이후 경과 시간
 
 ## API
 
@@ -239,3 +225,4 @@ npm run dev -- --host 127.0.0.1 --port 5173
 
 - Spotify API는 계정 상태에 따라 `403`이 날 수 있습니다.
 - 예전 구조 파일은 삭제하지 않고 `delfile/`로 이동했습니다.
+- 과거 `data/` 파일도 현재는 `delfile/data_archive/`에 보관합니다.
