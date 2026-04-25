@@ -29,6 +29,8 @@
 - OpenAI 우선 설명 생성
 - 로컬 EXAONE fallback
 - 최종 템플릿 fallback
+- iTunes Search 기반 공개 검색
+- MusicBrainz 기반 공개 메타데이터 검색
 - 지니 차트 크롤링
 - 직전 스냅샷 대비 diff 분석
 - OpenAI 차트 리포트 생성
@@ -127,13 +129,24 @@ venv\Scripts\python scripts\download_local_model.py
 루트 `.env`에 아래 값을 둡니다.
 
 ```env
-SPOTIFY_CLIENT_ID=your_spotify_client_id
-SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 LASTFM_API_KEY=your_lastfm_api_key
 OPENAI_API_KEY=your_openai_api_key
 OPENAI_MODEL=gpt-4.1-mini
 LOCAL_LLM_MODEL_ID=LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct
 ```
+
+최소 실행 기준:
+
+- 꼭 필요: `OPENAI_API_KEY`
+- 있으면 좋음: `LASTFM_API_KEY`
+- 지금 기본 추천 흐름에는 불필요: `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`
+
+현재 추천 API 소스 구성:
+
+- `iTunes Search API`: 키 없이 사용
+- `MusicBrainz`: 키 없이 사용
+- `Last.fm`: 키 있으면 추가 추천 소스로 사용
+- `Spotify`: 정책 이슈로 기본 추천 소스에서 제외
 
 ## 실행 방법
 

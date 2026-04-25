@@ -52,8 +52,10 @@ export default function RecommendPage() {
         <StatusPanel
           title="연결 상태"
           items={[
-            { label: "Spotify", value: status.spotify.status },
+            { label: "iTunes Search", value: status.itunes.status, meta: status.itunes.note },
+            { label: "MusicBrainz", value: status.musicbrainz.status, meta: status.musicbrainz.note },
             { label: "Last.fm", value: status.lastfm.status },
+            { label: "Spotify", value: status.spotify.status, meta: status.spotify.note },
             {
               label: "OpenAI",
               value: status.openai.status,
