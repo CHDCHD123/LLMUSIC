@@ -164,8 +164,11 @@ function HomeTopBar({
 }) {
   return (
     <nav className="z-50 flex w-full items-center justify-between border-b border-white/10 bg-[#0F121D]/80 px-16 py-6 shadow-[0_0_15px_rgba(212,175,55,0.1)] backdrop-blur-xl">
-      <button type="button" className="text-2xl italic tracking-[0.18em] text-amber-500" style={{ fontFamily: '"Noto Serif", serif' }} onClick={() => onNavigate("home")}>
-        LLMUSIC
+      <button type="button" className="flex items-center gap-4 text-left leading-none" onClick={() => onNavigate("home")}>
+        <img src="/LLMUSICLOGO2.png" alt="LLMUSIC logo" className="h-8 w-8 shrink-0 object-contain" />
+        <span className="text-[21px] italic tracking-[0.14em] text-amber-500" style={{ fontFamily: '"Noto Serif", serif' }}>
+          LLMUSIC
+        </span>
       </button>
       <div className="hidden items-center gap-16 md:flex">
         {[
