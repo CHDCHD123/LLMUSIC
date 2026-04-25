@@ -20,7 +20,7 @@ export default function HomePage({ onNavigate }: Props) {
               AI 사운드 엔진
             </span>
           </h1>
-          <p className="mb-12 mt-8 max-w-2xl font-['Be_Vietnam_Pro'] text-[18px] leading-[1.6] text-slate-300">
+          <p className="mb-12 mt-8 max-w-4xl whitespace-nowrap font-['Be_Vietnam_Pro'] text-[18px] leading-[1.6] text-slate-300">
             인공지능 추천과 시스템 자동화가 만난 차세대 음악 플랫폼. 지금 가장 화려한 음악 경험을 시작하세요.
           </p>
           <button
@@ -50,7 +50,9 @@ export default function HomePage({ onNavigate }: Props) {
               </div>
               <h3 className="mb-4 font-['Space_Grotesk'] text-[32px] font-semibold leading-[1.3] tracking-[-0.02em] text-white">AI 감성 추천</h3>
               <p className="mb-8 max-w-md font-['Be_Vietnam_Pro'] text-base leading-[1.6] text-slate-300">
-                지금 당신의 기분에 딱 맞는 곡을 AI가 직접 선곡합니다. 실시간 감정 분석을 통한 완벽한 사운드트랙.
+                지금 당신의 기분에 딱 맞는 곡을 AI가 직접 선곡합니다.
+                <br />
+                실시간 감정 분석을 통한 완벽한 사운드트랙.
               </p>
               <div className="relative mt-8 h-48 w-full">
                 <div className="absolute left-4 top-4 flex h-32 w-3/4 -rotate-6 items-center gap-4 rounded-xl border border-white/10 bg-gradient-to-br from-[#292a2e] to-[#121317] p-4 shadow-2xl">
@@ -86,7 +88,9 @@ export default function HomePage({ onNavigate }: Props) {
               </div>
               <h3 className="mb-4 font-['Space_Grotesk'] text-[32px] font-semibold leading-[1.3] tracking-[-0.02em] text-white">시스템 자동화 허브</h3>
               <p className="mb-8 max-w-md font-['Be_Vietnam_Pro'] text-base leading-[1.6] text-slate-300">
-                복잡한 차트 분석과 데이터 처리를 24시간 잠들지 않는 AI가 자동으로 처리합니다.
+                복잡한 차트 분석과 데이터 처리를
+                <br />
+                24시간 잠들지 않는 AI가 자동으로 처리합니다.
               </p>
               <div className="relative mt-8 w-full rounded-xl border border-white/5 bg-black/10 p-4">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">

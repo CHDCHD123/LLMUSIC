@@ -7,7 +7,7 @@ import RecommendPage from "./pages/RecommendPage";
 import { fetchStatus } from "./services/api";
 
 const tabs = [
-  { key: "home", label: "메인", path: "/" },
+  { key: "home", label: "메인", path: "/home" },
   { key: "recommend", label: "추천", path: "/recommend" },
   { key: "automation", label: "자동화", path: "/automation" },
   { key: "reports", label: "리포트", path: "/reports" },
@@ -16,7 +16,7 @@ const tabs = [
 type TabKey = (typeof tabs)[number]["key"];
 
 function pathToTab(pathname: string): TabKey {
-  if (pathname === "/") return "home";
+  if (pathname === "/" || pathname === "/home") return "home";
   if (pathname === "/automation") return "automation";
   if (pathname === "/reports") return "reports";
   return "recommend";
@@ -162,6 +162,10 @@ export default function App() {
   }
 
   useEffect(() => {
+    if (window.location.pathname === "/") {
+      window.history.replaceState({}, "", "/home");
+      setTab("home");
+    }
     const handlePopState = () => setTab(pathToTab(window.location.pathname));
     window.addEventListener("popstate", handlePopState);
     refreshStatus(true).catch(() => undefined);
