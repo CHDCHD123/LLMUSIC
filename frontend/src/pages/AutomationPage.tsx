@@ -1,8 +1,14 @@
 import { FormEvent, useEffect, useState } from "react";
 
+import StatusPanel from "../components/StatusPanel";
 import { fetchAutomationStatus, runAutomation, updateSchedule } from "../services/api";
 
-export default function AutomationPage() {
+type Props = {
+  systemStatus?: any;
+  onStatusRefresh?: () => void;
+};
+
+export default function AutomationPage({ systemStatus, onStatusRefresh }: Props) {
   const [status, setStatus] = useState<any>(null);
   const [timeValue, setTimeValue] = useState("17:00");
   const [message, setMessage] = useState("");
@@ -22,6 +28,7 @@ export default function AutomationPage() {
       await runAutomation();
       setMessage("자동화 파이프라인 실행을 시작했습니다.");
       await refresh();
+      onStatusRefresh?.();
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "실행 실패");
     }
@@ -60,6 +67,19 @@ export default function AutomationPage() {
           수동 실행과 예약 실행을 모두 지원하며, 산출물 파일명에는 실행 시각이 함께 기록됩니다.
         </p>
       </section>
+
+      {systemStatus ? (
+        <StatusPanel
+          title="API 연결 상태"
+          items={[
+            { label: "iTunes Search", value: systemStatus.itunes?.status ?? "-", meta: systemStatus.itunes?.note },
+            { label: "MusicBrainz", value: systemStatus.musicbrainz?.status ?? "-", meta: systemStatus.musicbrainz?.note },
+            { label: "Last.fm", value: systemStatus.lastfm?.status ?? "-" },
+            { label: "OpenAI", value: systemStatus.openai?.status ?? "-", meta: systemStatus.openai?.model },
+            { label: "로컬 모델", value: systemStatus.local_models?.status ?? "-" },
+          ]}
+        />
+      ) : null}
 
       <section className="panel">
         <div className="section-heading">

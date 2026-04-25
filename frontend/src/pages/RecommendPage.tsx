@@ -5,18 +5,31 @@ import { fetchStatus, recommend } from "../services/api";
 
 const emotions = ["행복", "슬픔", "화남", "평온", "신남", "그리움", "집중", "운동", "휴식", "로맨틱"];
 
-export default function RecommendPage() {
+type Props = {
+  initialStatus?: any;
+  onStatusRefresh?: () => void;
+};
+
+export default function RecommendPage({ initialStatus, onStatusRefresh }: Props) {
   const [emotion, setEmotion] = useState("행복");
   const [situation, setSituation] = useState("");
   const [koreanOnly, setKoreanOnly] = useState(false);
-  const [status, setStatus] = useState<any>(null);
+  const [status, setStatus] = useState<any>(initialStatus ?? null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchStatus(true).then(setStatus).catch((err) => setError(err.message));
-  }, []);
+    if (!initialStatus) {
+      fetchStatus(true).then(setStatus).catch((err) => setError(err.message));
+    }
+  }, [initialStatus]);
+
+  useEffect(() => {
+    if (initialStatus) {
+      setStatus(initialStatus);
+    }
+  }, [initialStatus]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -31,6 +44,7 @@ export default function RecommendPage() {
       setResult(response);
       const nextStatus = await fetchStatus(false);
       setStatus(nextStatus);
+      onStatusRefresh?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "추천 실패");
     } finally {
@@ -123,6 +137,23 @@ export default function RecommendPage() {
                 <span>{item.artist}</span>
                 <small>{item.album ?? item.source}</small>
                 <small>{item.source}</small>
+                <div className="song-actions">
+                  {item.external_url ? (
+                    <a className="secondary-button link-button" href={item.external_url} target="_blank" rel="noreferrer">
+                      외부 링크
+                    </a>
+                  ) : null}
+                  {item.preview_url ? (
+                    <a className="secondary-button link-button" href={item.preview_url} target="_blank" rel="noreferrer">
+                      미리듣기
+                    </a>
+                  ) : null}
+                  {item.lastfm_url && !item.external_url ? (
+                    <a className="secondary-button link-button" href={item.lastfm_url} target="_blank" rel="noreferrer">
+                      Last.fm
+                    </a>
+                  ) : null}
+                </div>
               </article>
             ))}
           </div>

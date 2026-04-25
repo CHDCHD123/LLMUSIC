@@ -29,10 +29,18 @@ input {
 }
 
 .sidebar {
+  display: grid;
+  align-content: start;
+  gap: 24px;
   padding: 32px 24px;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(12, 15, 21, 0.8);
   backdrop-filter: blur(16px);
+}
+
+.sidebar-stack {
+  display: grid;
+  gap: 16px;
 }
 
 .sidebar h2,
@@ -193,9 +201,35 @@ input {
   padding: 14px 18px;
 }
 
+.small-button,
+.link-button {
+  padding: 10px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .secondary-button {
   background: rgba(255, 255, 255, 0.08);
   color: #f2eee6;
+}
+
+.compact-panel {
+  padding: 16px;
+  border-radius: 20px;
+}
+
+.compact-status-grid {
+  grid-template-columns: 1fr;
+}
+
+.sidebar-notice {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 115, 115, 0.12);
+  color: #ffc2c2;
 }
 
 .automation-meta {
@@ -222,6 +256,13 @@ input {
 .explanation {
   line-height: 1.7;
   white-space: pre-wrap;
+}
+
+.song-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
 }
 
 @media (max-width: 900px) {
